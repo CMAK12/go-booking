@@ -1,59 +1,32 @@
 package db
 
 import (
-	"database/sql"
+	"context"
+	"fmt"
+	"go-booking/internal/config"
 	"log"
 
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-var DB *sql.DB
+func MustConnect(ctx context.Context, pgConfig config.PostgresConfig) (*pgxpool.Pool, string) {
+	dsn := pgConfig.BuildConnectionString()
 
-func InitializePostgreSQL(connString *string) {
-	var err error
-	DB, err = sql.Open("postgres", *connString)
+	poolConfig, err := pgxpool.ParseConfig(dsn)
+	fmt.Println("DSN:", dsn)
 	if err != nil {
-		log.Fatalf("failed to open database: %v", err)
+		log.Fatalf("failed to parse database URL: %v", err)
 	}
 
-	err = DB.Ping()
+	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
 	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	if err := pool.Ping(ctx); err != nil {
 		log.Fatalf("failed to ping database: %v", err)
 	}
 
-	err = createTables()
-	if err != nil {
-		log.Fatalf("failed to create tables: %v", err)
-	}
-
 	log.Println("database connection established")
-}
 
-func Close() {
-	if DB != nil {
-		DB.Close()
-	}
-}
-
-func createTables() error {
-	query := `
-	CREATE TABLE IF NOT EXISTS users (
-		id UUID PRIMARY KEY,
-		username VARCHAR(100) UNIQUE NOT NULL,
-		password VARCHAR(500) NOT NULL,
-		email VARCHAR(100) UNIQUE NOT NULL,
-		role VARCHAR(100) NOT NULL
-	);
-
-	CREATE TABLE IF NOT EXISTS reservations (
-		id UUID PRIMARY KEY,
-		first_name VARCHAR(100) NOT NULL,
-		last_name VARCHAR(100),
-		date DATE NOT NULL,
-		guest_quantity INT NOT NULL,
-		city VARCHAR(100) NOT NULL
-	);`
-
-	_, err := DB.Exec(query)
-	return err
+	return pool, dsn
 }

@@ -1,25 +1,27 @@
 package service
 
 import (
-	"go-booking/internal/models"
+	"context"
 
-	"github.com/google/uuid"
+	"go-booking/internal/dto"
+	"go-booking/internal/models"
+	"go-booking/internal/storage"
 )
 
 type (
 	UserService interface {
-		Get(id uuid.UUID) (*models.User, error)
-		List() ([]*models.User, error)
-		Create(user *models.User) (*models.User, error)
-		Update(user *models.User) (*models.User, error)
-		Delete(id uuid.UUID) error
+		Get(ctx context.Context, id string) (*models.User, error)
+		List(ctx context.Context, filter storage.ListUserFilter) ([]*models.User, error)
+		Create(ctx context.Context, user *dto.CreateUserRequest) (*models.User, error)
+		Update(ctx context.Context, user *models.User) (*models.User, error)
+		Delete(ctx context.Context, id string) error
 	}
 
 	ReservationService interface {
-		Get(id uuid.UUID) (*models.Reservation, error)
-		List() ([]*models.Reservation, error)
-		Create(reservation *models.Reservation) (*models.Reservation, error)
-		Update(reservation *models.Reservation) (*models.Reservation, error)
-		Delete(id uuid.UUID) error
+		Get(ctx context.Context, id string) (*models.Reservation, error)
+		List(ctx context.Context, filter storage.ListReservationFilter) ([]*models.Reservation, error)
+		Create(ctx context.Context, reservation *dto.CreateReservationRequest) (*models.Reservation, error)
+		Update(ctx context.Context, reservation *models.Reservation) (*models.Reservation, error)
+		Delete(ctx context.Context, id string) error
 	}
 )

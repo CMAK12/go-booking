@@ -28,13 +28,16 @@ func (h *Handler) SetupRoutes(r *chi.Mux) {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/users", func(r chi.Router) {
-			r.Get("/{id}", nil)
-			r.Post("/", nil)
-		})
+			r.Get("/", h.listUser)
+			r.Get("/{id}", h.getUser)
+			r.Post("/", h.createUser)
+			r.Put("/{id}", h.updateUser)
+			r.Delete("/{id}", h.deleteUser)
+    })
 		r.Route("/reservations", func(r chi.Router) {
 			r.Get("/", nil)
-			r.Post("/", nil)
-			r.Get("/{id}", nil)
+			// r.Post("/", CreateReservation)
+			// r.Get("/{id}", GetReservation)
 		})
 	})
 }

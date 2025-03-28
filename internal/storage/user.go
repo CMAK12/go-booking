@@ -1,20 +1,29 @@
 package storage
 
 import (
-	"database/sql"
+	"context"
 
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type userStorage struct {
-	db 			*sql.DB
-	builder sq.StatementBuilderType
-}
+type (
+	userStorage struct {
+		db 			*pgxpool.Pool
+		builder sq.StatementBuilderType
+	}
 
-func NewUserStorage(db *sql.DB) UserStorage {
+	ListUserFilter struct {
+		ID string `json:"id"`
+		Username string `json:"username"`
+		Email string `json:"email"`
+		Role string `json:"role"`
+	}
+)
+
+func NewUserStorage(db *pgxpool.Pool) UserStorage {
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 	return &userStorage{
@@ -23,27 +32,27 @@ func NewUserStorage(db *sql.DB) UserStorage {
 	}
 }
 
-func (s *userStorage) Get(id uuid.UUID) (*models.User, error) {
+func (s *userStorage) Get(ctx context.Context, id string) (*models.User, error) {
 	// Implementation here
 	return nil, nil
 }
 
-func (s *userStorage) List() ([]*models.User, error) {
+func (s *userStorage) List(ctx context.Context, filter ListUserFilter) ([]*models.User, error) {
 	// Implementation here
 	return nil, nil
 }
 
-func (s *userStorage) Create(user *models.User) (*models.User, error) {
+func (s *userStorage) Create(ctx context.Context, user *models.User) (*models.User, error) {
 	// Implementation here
 	return nil, nil
 }
 
-func (s *userStorage) Update(user *models.User) (*models.User, error) {
+func (s *userStorage) Update(ctx context.Context, user *models.User) (*models.User, error) {
 	// Implementation here
 	return nil, nil
 }
 
-func (s *userStorage) Delete(id uuid.UUID) error {
+func (s *userStorage) Delete(ctx context.Context, id string) error {
 	// Implementation here
 	return nil
 }
