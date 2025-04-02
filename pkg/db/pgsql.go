@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"fmt"
 	"go-booking/internal/config"
 	"log"
 
@@ -13,7 +12,6 @@ func MustConnect(ctx context.Context, pgConfig config.PostgresConfig) (*pgxpool.
 	dsn := pgConfig.BuildConnectionString()
 
 	poolConfig, err := pgxpool.ParseConfig(dsn)
-	fmt.Println("DSN:", dsn)
 	if err != nil {
 		log.Fatalf("failed to parse database URL: %v", err)
 	}

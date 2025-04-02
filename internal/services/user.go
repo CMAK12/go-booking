@@ -5,6 +5,7 @@ import (
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
+	"log"
 )
 
 type userService struct {
@@ -15,27 +16,50 @@ func NewUserService(userStorage storage.UserStorage) UserService {
 	return &userService{userStorage: userStorage}
 }
 
-func (s *userService) Get(ctx context.Context, id string) (*models.User, error) {
-	// Implementation here
-	return nil, nil
+func (s *userService) Get(ctx context.Context, id string) (models.User, error) {
+	user, err := s.userStorage.Get(ctx, id)
+	if err != nil {
+		log.Println("error getting user", err)
+		return models.User{}, err
+	}
+
+	return user, nil
 }
 
-func (s *userService) List(ctx context.Context, filter storage.ListUserFilter) ([]*models.User, error) {
-	// Implementation here
-	return nil, nil
+func (s *userService) List(ctx context.Context, filter storage.ListUserFilter) ([]models.User, error) {
+	users, err := s.userStorage.List(ctx, filter)
+	if err != nil {
+		log.Println("error listing users", err)
+		return nil, err
+	}
+	return users, nil
 }
 
-func (s *userService) Create(ctx context.Context, user *dto.CreateUserRequest) (*models.User, error) {
-	// Implementation here
-	return nil, nil
+func (s *userService) Create(ctx context.Context, dto dto.CreateUserRequest) (models.User, error) {
+	user, err := s.userStorage.Create(ctx, models.NewUser(dto))
+	if err != nil {
+		log.Println("error creating user", err)
+		return models.User{}, err
+	}
+
+	return user, nil
 }
 
-func (s *userService) Update(ctx context.Context, user *models.User) (*models.User, error) {
-	// Implementation here
-	return nil, nil
+func (s *userService) Update(ctx context.Context, id string, user models.User) (models.User, error) {
+	updatedUser, err := s.userStorage.Update(ctx, id, user)
+	if err != nil {
+		log.Println("error updating user", err)
+		return models.User{}, err
+	}
+
+	return updatedUser, nil
 }
 
 func (s *userService) Delete(ctx context.Context, id string) error {
-	// Implementation here
+	err := s.userStorage.Delete(ctx, id)
+	if err != nil {
+		log.Println("error deleting user", err)
+		return err
+	}
 	return nil
 }

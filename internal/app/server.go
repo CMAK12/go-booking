@@ -31,12 +31,30 @@ func MustRun() {
 	defer shutdownCancel()
 
 	userStorage := storage.NewUserStorage(pgConn)
-	reservationStorage := storage.NewReservationStorage(pgConn)
+	bookingStorage := storage.NewBookingStorage(pgConn)
+	roomStorage := storage.NewRoomStorage(pgConn)
+	hotelStorage := storage.NewHotelStorage(pgConn)
+	extraServiceStorage := storage.NewExtraServiceStorage(pgConn)
+	bookingServiceRelationStorage := storage.NewBookingServiceRelationStorage(pgConn)
+	discountStorage := storage.NewDiscountStorage(pgConn)
 
 	userService := service.NewUserService(userStorage)
-	reservationService := service.NewReservationService(reservationStorage)
+	bookingService := service.NewBookingService(bookingStorage)
+	hotelService := service.NewHotelService(hotelStorage)
+	roomService := service.NewRoomService(roomStorage)
+	extraServiceService := service.NewExtraServiceService(extraServiceStorage)
+	bookingServiceRelationService := service.NewBookingServiceRelationService(bookingServiceRelationStorage)
+	discountService := service.NewDiscountService(discountStorage)
 
-	handler := v1.NewHandler(userService, reservationService)
+	handler := v1.NewHandler(
+		userService,
+		bookingService,
+		hotelService,
+		roomService,
+		extraServiceService,
+		bookingServiceRelationService,
+		discountService,
+	)
 
 	router := chi.NewRouter()
 	handler.SetupRoutes(router)
@@ -59,5 +77,4 @@ func migrate(dsn string) {
 	if err := goose.Up(sqlDB, "./migrations"); err != nil {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
-
 }

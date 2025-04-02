@@ -2,49 +2,23 @@ package v1
 
 import (
 	"encoding/json"
-	"net/http"
-
 	"go-booking/internal/dto"
-	"go-booking/internal/models"
 	"go-booking/internal/storage"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) getBooking(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	user, err := h.userService.Get(r.Context(), id)
+	booking, err := h.bookingService.Get(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonData, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
-}
-
-func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
-	filter := storage.ListUserFilter{
-		ID:       r.URL.Query().Get("id"),
-		Username: r.URL.Query().Get("username"),
-		Email:    r.URL.Query().Get("email"),
-		Role:     r.URL.Query().Get("role"),
-	}
-
-	users, err := h.userService.List(r.Context(), filter)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	jsonData, err := json.Marshal(users)
+	jsonData, err := json.Marshal(booking)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -54,21 +28,46 @@ func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateUserRequest
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) {
+	filter := storage.ListBookingFilter{
+		ID:        r.URL.Query().Get("id"),
+		UserID:    r.URL.Query().Get("user_id"),
+		RoomID:    r.URL.Query().Get("room_id"),
+		StartDate: r.URL.Query().Get("start_date"),
+		EndDate:   r.URL.Query().Get("end_date"),
+		Status:    r.URL.Query().Get("status"),
 	}
 
-	user, err := h.userService.Create(r.Context(), req)
+	bookings, err := h.bookingService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonData, err := json.Marshal(user)
+	jsonData, err := json.Marshal(bookings)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
+}
+
+func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request) {
+	var dto dto.CreateBookingRequest
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	booking, err := h.bookingService.Create(r.Context(), dto)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.Marshal(booking)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -78,22 +77,22 @@ func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) updateBooking(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	var req models.User
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+	var booking dto.UpdateBookingRequest
+	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	user, err := h.userService.Update(r.Context(), id, req)
+	updatedBooking, err := h.bookingService.Update(r.Context(), id, booking)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonData, err := json.Marshal(user)
+	jsonData, err := json.Marshal(updatedBooking)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -103,14 +102,13 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) deleteBooking(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	if err := h.userService.Delete(r.Context(), id); err != nil {
+	if err := h.bookingService.Delete(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte("User deleted successfully"))
 }

@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
@@ -11,40 +12,16 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) getRoom(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	user, err := h.userService.Get(r.Context(), id)
+	room, err := h.roomService.Get(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonData, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
-}
-
-func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
-	filter := storage.ListUserFilter{
-		ID:       r.URL.Query().Get("id"),
-		Username: r.URL.Query().Get("username"),
-		Email:    r.URL.Query().Get("email"),
-		Role:     r.URL.Query().Get("role"),
-	}
-
-	users, err := h.userService.List(r.Context(), filter)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	jsonData, err := json.Marshal(users)
+	jsonData, err := json.Marshal(room)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -54,21 +31,65 @@ func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
-	var req dto.CreateUserRequest
+func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	filter := storage.ListRoomFilter{
+		ID:          query.Get("id"),
+		HotelID:     query.Get("hotel_id"),
+		Name:        query.Get("name"),
+		Description: query.Get("description"),
+		Available:   query.Get("available"),
+	}
+
+	if price := query.Get("price"); price != "" {
+		p, err := strconv.Atoi(price)
+		if err != nil {
+			http.Error(w, "Invalid price value", http.StatusBadRequest)
+			return
+		}
+		filter.Price = p
+	}
+	if capacity := query.Get("capacity"); capacity != "" {
+		c, err := strconv.Atoi(capacity)
+		if err != nil {
+			http.Error(w, "Invalid capacity value", http.StatusBadRequest)
+			return
+		}
+		filter.Capacity = c
+	}
+
+	rooms, err := h.roomService.List(r.Context(), filter)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonData, err := json.Marshal(rooms)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
+}
+
+func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {
+	var dto dto.CreateRoomRequest
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
-	user, err := h.userService.Create(r.Context(), req)
+	room, err := h.roomService.Create(r.Context(), dto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonData, err := json.Marshal(user)
+	jsonData, err := json.Marshal(room)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -78,22 +99,23 @@ func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) updateRoom(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	var req models.User
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	var room models.Room
+	if err := json.NewDecoder(r.Body).Decode(&room); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
-	user, err := h.userService.Update(r.Context(), id, req)
+	room, err := h.roomService.Update(r.Context(), id, room)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonData, err := json.Marshal(user)
+	jsonData, err := json.Marshal(room)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -103,14 +125,14 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
 	w.Write(jsonData)
 }
 
-func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 
-	if err := h.userService.Delete(r.Context(), id); err != nil {
+	err := h.roomService.Delete(r.Context(), id)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte("User deleted successfully"))
 }
