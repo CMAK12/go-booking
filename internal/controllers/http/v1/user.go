@@ -16,7 +16,7 @@ func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
 		ID:       r.URL.Query().Get("id"),
 		Username: r.URL.Query().Get("username"),
 		Email:    r.URL.Query().Get("email"),
-		Role:     r.URL.Query().Get("role"),
+		Role:     models.UserRole(r.URL.Query().Get("role")),
 	}
 
 	users, err := h.userService.List(r.Context(), filter)

@@ -16,12 +16,12 @@ type bookingStorage struct {
 }
 
 type ListBookingFilter struct {
-	ID        string `json:"id"`
-	RoomID    string `json:"room_id"`
-	UserID    string `json:"user_id"`
-	StartDate string `json:"start_date"`
-	EndDate   string `json:"end_date"`
-	Status    string `json:"status"`
+	ID        string               `json:"id"`
+	RoomID    string               `json:"room_id"`
+	UserID    string               `json:"user_id"`
+	StartDate string               `json:"start_date"`
+	EndDate   string               `json:"end_date"`
+	Status    models.BookingStatus `json:"status"`
 }
 
 func NewBookingStorage(db *pgxpool.Pool) BookingStorage {

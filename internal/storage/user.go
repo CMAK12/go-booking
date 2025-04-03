@@ -17,10 +17,10 @@ type (
 	}
 
 	ListUserFilter struct {
-		ID       string `json:"id"`
-		Username string `json:"username"`
-		Email    string `json:"email"`
-		Role     string `json:"role"`
+		ID       string          `json:"id"`
+		Username string          `json:"username"`
+		Email    string          `json:"email"`
+		Role     models.UserRole `json:"role"`
 	}
 )
 

@@ -3,19 +3,26 @@ package models
 import (
 	"time"
 
-	"go-booking/internal/consts"
 	"go-booking/internal/dto"
 
 	"github.com/google/uuid"
 )
 
+type BookingStatus string
+
+const (
+	BookingStatusPending   BookingStatus = "pending"
+	BookingStatusConfirmed BookingStatus = "confirmed"
+	BookingStatusCancelled BookingStatus = "cancelled"
+)
+
 type Booking struct {
-	ID        string    `json:"id"`
-	User      User      `json:"user"`
-	Room      Room      `json:"room"`
-	StartDate time.Time `json:"start_date"`
-	EndDate   time.Time `json:"end_date"`
-	Status    string    `json:"status"` // pending, confirmed, cancelled
+	ID        string        `json:"id"`
+	User      User          `json:"user"`
+	Room      Room          `json:"room"`
+	StartDate time.Time     `json:"start_date"`
+	EndDate   time.Time     `json:"end_date"`
+	Status    BookingStatus `json:"status"` // pending, confirmed, cancelled
 }
 
 func NewBooking(dto dto.CreateBookingRequest) Booking {
@@ -35,7 +42,7 @@ func NewBooking(dto dto.CreateBookingRequest) Booking {
 		},
 		StartDate: startDate,
 		EndDate:   endDate,
-		Status:    consts.BookingStatusPending,
+		Status:    BookingStatusPending,
 	}
 }
 
@@ -53,6 +60,6 @@ func NewBookingFromDTO(id string, dto dto.UpdateBookingRequest) Booking {
 		},
 		StartDate: startDate,
 		EndDate:   endDate,
-		Status:    dto.Status,
+		Status:    BookingStatus(dto.Status),
 	}
 }

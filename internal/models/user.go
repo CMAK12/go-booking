@@ -1,11 +1,19 @@
 package models
 
 import (
-	"go-booking/internal/consts"
-	"go-booking/internal/dto"
 	"time"
 
+	"go-booking/internal/dto"
+
 	"github.com/google/uuid"
+)
+
+type UserRole string
+
+const (
+	RoleGuest   UserRole = "guest"
+	RoleAdmin   UserRole = "admin"
+	RoleManager UserRole = "manager"
 )
 
 type User struct {
@@ -13,7 +21,7 @@ type User struct {
 	Name      string    `json:"name"`
 	Email     string    `json:"email"`
 	Password  string    `json:"-"`
-	Role      string    `json:"role"` // guest, admin, manager
+	Role      UserRole  `json:"role"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -24,6 +32,6 @@ func NewUser(dto dto.CreateUserRequest) User {
 		Name:      dto.Name,
 		Password:  dto.Password,
 		CreatedAt: time.Now(),
-		Role:      consts.RoleGuest,
+		Role:      RoleGuest,
 	}
 }
