@@ -7,7 +7,6 @@ import (
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -32,34 +31,6 @@ func NewHotelStorage(db *pgxpool.Pool) HotelStorage {
 		db:      db,
 		builder: builder,
 	}
-}
-
-func (s *hotelStorage) Get(ctx context.Context, id string) (models.Hotel, error) {
-	if id == "" {
-		return models.Hotel{}, fmt.Errorf("hotel id is empty")
-	}
-
-	query, args, err := s.builder.
-		Select("id", "name", "city", "address", "rating", "description").
-		From(hotelTable).
-		Where(sq.Eq{"id": id}).
-		ToSql()
-	if err != nil {
-		return models.Hotel{}, fmt.Errorf("failed to build query: %w", err)
-	}
-
-	var hotel models.Hotel
-	err = s.db.QueryRow(ctx, query, args...).Scan(
-		&hotel.ID, &hotel.Name, &hotel.City, &hotel.Address,
-		&hotel.Rating, &hotel.Description,
-	)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return models.Hotel{}, fmt.Errorf("hotel not found: %w", err)
-		}
-		return models.Hotel{}, fmt.Errorf("failed to scan hotel: %w", err)
-	}
-	return hotel, nil
 }
 
 func (s *hotelStorage) List(ctx context.Context, filter ListHotelFilter) ([]models.Hotel, error) {

@@ -18,14 +18,6 @@ func NewExtraServiceService(extraServiceStorage storage.ExtraServiceStorage) Ext
 	}
 }
 
-func (s *extraServiceService) Get(ctx context.Context, id string) (models.ExtraService, error) {
-	extraService, err := s.extraServiceStorage.Get(ctx, id)
-	if err != nil {
-		return models.ExtraService{}, fmt.Errorf("failed to get extra service: %w", err)
-	}
-	return extraService, nil
-}
-
 func (s *extraServiceService) List(ctx context.Context, filter storage.ListExtraServiceFilter) ([]models.ExtraService, error) {
 	extraServices, err := s.extraServiceStorage.List(ctx, filter)
 	if err != nil {

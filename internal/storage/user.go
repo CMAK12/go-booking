@@ -7,7 +7,6 @@ import (
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -32,31 +31,6 @@ func NewUserStorage(db *pgxpool.Pool) UserStorage {
 		db:      db,
 		builder: builder,
 	}
-}
-
-func (s *userStorage) Get(ctx context.Context, id string) (models.User, error) {
-	if id == "" {
-		return models.User{}, fmt.Errorf("user ID is empty")
-	}
-
-	query, args, err := s.builder.
-		Select("id", "name", "email", "role", "created_at").
-		From(userTable).
-		Where(sq.Eq{"id": id}).
-		ToSql()
-	if err != nil {
-		return models.User{}, fmt.Errorf("failed to build query: %w", err)
-	}
-
-	var user models.User
-	err = s.db.QueryRow(ctx, query, args...).Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.CreatedAt)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return models.User{}, fmt.Errorf("user not found: %w", err)
-		}
-		return models.User{}, fmt.Errorf("failed to execute query: %w", err)
-	}
-	return user, nil
 }
 
 func (s *userStorage) List(ctx context.Context, filter ListUserFilter) ([]models.User, error) {

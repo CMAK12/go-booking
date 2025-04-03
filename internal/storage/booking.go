@@ -7,7 +7,6 @@ import (
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -32,46 +31,6 @@ func NewBookingStorage(db *pgxpool.Pool) BookingStorage {
 		db:      db,
 		builder: builder,
 	}
-}
-
-func (s *bookingStorage) Get(ctx context.Context, id string) (models.Booking, error) {
-	if id == "" {
-		return models.Booking{}, fmt.Errorf("booking id is empty")
-	}
-
-	query, args, err := s.builder.
-		Select(
-			"bt.id", "bt.start_date", "bt.end_date", "bt.status",
-			"rt.id", "rt.type", "rt.capacity", "rt.price", "rt.available",
-			"ut.id", "ut.name", "ut.email", "ut.password", "ut.role", "ut.created_at",
-			"ht.id", "ht.name", "ht.address", "ht.city", "ht.description", "ht.rating",
-		).
-		From(fmt.Sprintf("%s AS bt", bookingTable)).
-		Join(fmt.Sprintf("%s AS rt ON bt.room_id = rt.id", roomTable)).
-		Join(fmt.Sprintf("%s AS ut ON bt.user_id = ut.id", userTable)).
-		Join(fmt.Sprintf("%s AS ht ON rt.hotel_id = ht.id", hotelTable)).
-		Where(sq.Eq{"bt.id": id}).
-		ToSql()
-
-	if err != nil {
-		return models.Booking{}, fmt.Errorf("failed to build query: %w", err)
-	}
-
-	var booking models.Booking
-	err = s.db.QueryRow(ctx, query, args...).Scan(
-		&booking.ID, &booking.StartDate, &booking.EndDate, &booking.Status,
-		&booking.Room.ID, &booking.Room.Type, &booking.Room.Capacity, &booking.Room.Price, &booking.Room.Available,
-		&booking.User.ID, &booking.User.Name, &booking.User.Email, &booking.User.Password, &booking.User.Role, &booking.User.CreatedAt,
-		&booking.Room.Hotel.ID, &booking.Room.Hotel.Name, &booking.Room.Hotel.Address, &booking.Room.Hotel.City, &booking.Room.Hotel.Description, &booking.Room.Hotel.Rating,
-	)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return models.Booking{}, fmt.Errorf("booking not found: %w", err)
-		}
-		return models.Booking{}, fmt.Errorf("failed to scan booking: %w", err)
-	}
-
-	return booking, nil
 }
 
 func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]models.Booking, error) {

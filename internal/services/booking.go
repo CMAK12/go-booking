@@ -20,15 +20,6 @@ func NewBookingService(bookingStorage storage.BookingStorage) BookingService {
 	}
 }
 
-func (s *bookingService) Get(ctx context.Context, id string) (models.Booking, error) {
-	booking, err := s.bookingStorage.Get(ctx, id)
-	if err != nil {
-		log.Println("failed to get booking:", err)
-		return models.Booking{}, err
-	}
-	return booking, nil
-}
-
 func (s *bookingService) List(ctx context.Context, filter storage.ListBookingFilter) ([]models.Booking, error) {
 	bookings, err := s.bookingStorage.List(ctx, filter)
 	if err != nil {

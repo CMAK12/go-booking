@@ -15,9 +15,10 @@ type discountStorage struct {
 }
 
 type ListDiscountFilter struct {
-	HotelID string
-	Amount  float64
-	Active  bool
+	ID      string  `json:"id"`
+	HotelID string  `json:"hotel_id"`
+	Amount  float64 `json:"amount"`
+	Active  bool    `json:"active"`
 }
 
 func NewDiscountStorage(db *pgxpool.Pool) DiscountStorage {
@@ -25,33 +26,6 @@ func NewDiscountStorage(db *pgxpool.Pool) DiscountStorage {
 		db:      db,
 		builder: sq.StatementBuilder.PlaceholderFormat(sq.Dollar),
 	}
-}
-
-func (s *discountStorage) Get(ctx context.Context, id string) (models.Discount, error) {
-	query, args, err := s.builder.
-		Select(
-			"d.id", "d.name", "d.amount", "d.active",
-			"h.id", "h.name", "h.address", "h.city", "h.description", "h.rating",
-		).
-		From(fmt.Sprintf("%s AS d", discountTable)).
-		Join(fmt.Sprintf("%s AS h ON d.hotel_id = h.id", hotelTable)).
-		Where(sq.Eq{"d.id": id}).
-		ToSql()
-	if err != nil {
-		return models.Discount{}, fmt.Errorf("failed to build query: %w", err)
-	}
-
-	var discount models.Discount
-	err = s.db.QueryRow(ctx, query, args...).Scan(
-		&discount.ID, &discount.Name, &discount.Amount, &discount.Active,
-		&discount.Hotel.ID, &discount.Hotel.Name, &discount.Hotel.Address,
-		&discount.Hotel.City, &discount.Hotel.Description, &discount.Hotel.Rating,
-	)
-	if err != nil {
-		return models.Discount{}, fmt.Errorf("failed to execute query: %w", err)
-	}
-
-	return discount, nil
 }
 
 func (s *discountStorage) List(ctx context.Context, filter ListDiscountFilter) ([]models.Discount, error) {
@@ -63,6 +37,9 @@ func (s *discountStorage) List(ctx context.Context, filter ListDiscountFilter) (
 		From(fmt.Sprintf("%s AS d", discountTable)).
 		Join(fmt.Sprintf("%s AS h ON d.hotel_id = h.id", hotelTable))
 
+	if filter.ID != "" {
+		qb = qb.Where(sq.Eq{"d.id": filter.ID})
+	}
 	if filter.HotelID != "" {
 		qb = qb.Where(sq.Eq{"d.hotel_id": filter.HotelID})
 	}

@@ -15,6 +15,7 @@ type extraServiceStorage struct {
 }
 
 type ListExtraServiceFilter struct {
+	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Price int    `json:"price"`
 }
@@ -28,34 +29,14 @@ func NewExtraServiceStorage(db *pgxpool.Pool) ExtraServiceStorage {
 	}
 }
 
-func (s *extraServiceStorage) Get(ctx context.Context, id string) (models.ExtraService, error) {
-	if id == "" {
-		return models.ExtraService{}, fmt.Errorf("extra service id is empty")
-	}
-
-	query, args, err := s.builder.
-		Select("id", "name", "price").
-		From(extraServiceTable).
-		Where(sq.Eq{"id": id}).
-		ToSql()
-	if err != nil {
-		return models.ExtraService{}, fmt.Errorf("failed to build query: %w", err)
-	}
-
-	var extraService models.ExtraService
-	err = s.db.QueryRow(ctx, query, args...).Scan(&extraService.ID, &extraService.Name, &extraService.Price)
-	if err != nil {
-		return models.ExtraService{}, fmt.Errorf("failed to execute query: %w", err)
-	}
-
-	return extraService, nil
-}
-
 func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceFilter) ([]models.ExtraService, error) {
 	qb := s.builder.
 		Select("id", "name", "price").
 		From(extraServiceTable)
 
+	if filter.ID != "" {
+		qb = qb.Where(sq.Eq{"id": filter.ID})
+	}
 	if filter.Name != "" {
 		qb = qb.Where(sq.Like{"name": "%" + filter.Name + "%"})
 	}

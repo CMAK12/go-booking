@@ -17,15 +17,6 @@ func NewHotelService(hotelStorage storage.HotelStorage) HotelService {
 	return &hotelService{hotelStorage: hotelStorage}
 }
 
-func (s *hotelService) Get(ctx context.Context, id string) (models.Hotel, error) {
-	hotel, err := s.hotelStorage.Get(ctx, id)
-	if err != nil {
-		log.Println("failed to get hotel:", err)
-		return models.Hotel{}, err
-	}
-	return hotel, nil
-}
-
 func (s *hotelService) List(ctx context.Context, filter storage.ListHotelFilter) ([]models.Hotel, error) {
 	hotels, err := s.hotelStorage.List(ctx, filter)
 	if err != nil {

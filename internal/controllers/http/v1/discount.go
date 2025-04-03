@@ -13,6 +13,7 @@ import (
 
 func (h *Handler) listDiscount(w http.ResponseWriter, r *http.Request) {
 	filter := storage.ListDiscountFilter{
+		ID:      r.URL.Query().Get("id"),
 		HotelID: r.URL.Query().Get("hotel_id"),
 	}
 
@@ -39,24 +40,6 @@ func (h *Handler) listDiscount(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	jsonData, err := json.Marshal(discounts)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
-}
-
-func (h *Handler) getDiscount(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-
-	discount, err := h.discountService.Get(r.Context(), id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	jsonData, err := json.Marshal(discount)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

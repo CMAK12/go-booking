@@ -19,16 +19,6 @@ func NewRoomService(roomStorage storage.RoomStorage) RoomService {
 	}
 }
 
-func (s *roomService) Get(ctx context.Context, id string) (models.Room, error) {
-	room, err := s.roomStorage.Get(ctx, id)
-	if err != nil {
-		log.Println("Error getting room:", err)
-		return models.Room{}, err
-	}
-
-	return room, nil
-}
-
 func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) ([]models.Room, error) {
 	rooms, err := s.roomStorage.List(ctx, filter)
 	if err != nil {

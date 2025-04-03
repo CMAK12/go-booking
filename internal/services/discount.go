@@ -17,14 +17,6 @@ func NewDiscountService(discountStorage storage.DiscountStorage) DiscountService
 	}
 }
 
-func (s *discountService) Get(ctx context.Context, id string) (models.Discount, error) {
-	discount, err := s.discountStorage.Get(ctx, id)
-	if err != nil {
-		return models.Discount{}, err
-	}
-	return discount, nil
-}
-
 func (s *discountService) List(ctx context.Context, filter storage.ListDiscountFilter) ([]models.Discount, error) {
 	discounts, err := s.discountStorage.List(ctx, filter)
 	if err != nil {

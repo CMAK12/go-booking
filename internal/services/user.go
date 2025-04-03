@@ -16,16 +16,6 @@ func NewUserService(userStorage storage.UserStorage) UserService {
 	return &userService{userStorage: userStorage}
 }
 
-func (s *userService) Get(ctx context.Context, id string) (models.User, error) {
-	user, err := s.userStorage.Get(ctx, id)
-	if err != nil {
-		log.Println("error getting user", err)
-		return models.User{}, err
-	}
-
-	return user, nil
-}
-
 func (s *userService) List(ctx context.Context, filter storage.ListUserFilter) ([]models.User, error) {
 	users, err := s.userStorage.List(ctx, filter)
 	if err != nil {

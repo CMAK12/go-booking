@@ -12,27 +12,9 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) getExtraService(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-
-	room, err := h.extraService.Get(r.Context(), id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	jsonData, err := json.Marshal(room)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
-}
-
 func (h *Handler) listExtraService(w http.ResponseWriter, r *http.Request) {
 	filter := storage.ListExtraServiceFilter{
+		ID:   r.URL.Query().Get("id"),
 		Name: r.URL.Query().Get("name"),
 	}
 

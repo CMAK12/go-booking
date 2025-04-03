@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -33,36 +32,6 @@ func NewRoomStorage(db *pgxpool.Pool) RoomStorage {
 		db:      db,
 		builder: builder,
 	}
-}
-
-func (s *roomStorage) Get(ctx context.Context, id string) (models.Room, error) {
-	if id == "" {
-		return models.Room{}, fmt.Errorf("room id is empty")
-	}
-
-	query, args, err := s.builder.
-		Select("r.id", "r.type", "r.capacity", "r.price", "r.available",
-			"h.id", "h.name", "h.address", "h.city", "h.description", "h.rating").
-		From(fmt.Sprintf("%s AS r", roomTable)).
-		Join(fmt.Sprintf("%s AS h ON r.hotel_id = h.id", hotelTable)).
-		Where(sq.Eq{"r.id": id}).
-		ToSql()
-	if err != nil {
-		return models.Room{}, fmt.Errorf("failed to build query: %w", err)
-	}
-
-	var room models.Room
-	err = s.db.QueryRow(ctx, query, args...).Scan(
-		&room.ID, &room.Type, &room.Capacity, &room.Price, &room.Available,
-		&room.Hotel.ID, &room.Hotel.Name, &room.Hotel.Address, &room.Hotel.City, &room.Hotel.Description, &room.Hotel.Rating,
-	)
-	if err != nil {
-		if err == pgx.ErrNoRows {
-			return models.Room{}, fmt.Errorf("room not found: %w", err)
-		}
-		return models.Room{}, fmt.Errorf("failed to execute query: %w", err)
-	}
-	return room, nil
 }
 
 func (s *roomStorage) List(ctx context.Context, filter ListRoomFilter) ([]models.Room, error) {

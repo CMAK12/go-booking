@@ -11,25 +11,6 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-
-	user, err := h.userService.Get(r.Context(), id)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	jsonData, err := json.Marshal(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
-}
-
 func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
 	filter := storage.ListUserFilter{
 		ID:       r.URL.Query().Get("id"),
