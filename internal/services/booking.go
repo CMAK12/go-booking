@@ -4,19 +4,24 @@ import (
 	"context"
 	"log"
 
+	"go-booking/internal/consts"
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
+
+	"github.com/veyselaksin/gomailer/pkg/mailer"
 )
 
 type bookingService struct {
 	bookingStorage storage.BookingStorage
+	mailAuth       mailer.Authentication
 }
 
-func NewBookingService(bookingStorage storage.BookingStorage) BookingService {
+func NewBookingService(bookingStorage storage.BookingStorage, mailAuth mailer.Authentication) BookingService {
 
 	return &bookingService{
 		bookingStorage: bookingStorage,
+		mailAuth:       mailAuth,
 	}
 }
 
@@ -36,6 +41,22 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		log.Println("failed to create booking:", err)
 		return models.Booking{}, err
 	}
+
+	go func() {
+		sender := mailer.NewPlainAuth(&s.mailAuth)
+		message := mailer.NewMessage(
+			consts.BookingVerificationSubject,
+			consts.BookingVerificationBody,
+		)
+		message.SetTo([]string{booking.User.Email})
+
+		if err := sender.SendMail(message); err != nil {
+			log.Printf("failed to send email to %s: %v", booking.User.Email, err)
+			return
+		}
+
+		log.Println("email sent successfully to:", booking.User.Email)
+	}()
 
 	return booking, nil
 }

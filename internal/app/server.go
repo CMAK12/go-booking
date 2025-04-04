@@ -24,6 +24,8 @@ func MustRun() {
 
 	cfg := config.MustLoad()
 
+	mailAuth := cfg.PostSender.AuthenticateMailer()
+
 	pgConn, dsn := db.MustConnect(ctx, cfg.Postgres)
 	migrate(dsn)
 
@@ -39,7 +41,7 @@ func MustRun() {
 	discountStorage := storage.NewDiscountStorage(pgConn)
 
 	userService := service.NewUserService(userStorage)
-	bookingService := service.NewBookingService(bookingStorage)
+	bookingService := service.NewBookingService(bookingStorage, mailAuth)
 	hotelService := service.NewHotelService(hotelStorage)
 	roomService := service.NewRoomService(roomStorage)
 	extraServiceService := service.NewExtraServiceService(extraServiceStorage)

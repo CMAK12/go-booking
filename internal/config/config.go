@@ -6,12 +6,14 @@ import (
 	"sync"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/veyselaksin/gomailer/pkg/mailer"
 )
 
 type (
 	Config struct {
-		HTTP     HTTPConfig     `envPrefix:"HTTP_CONFIG"`
-		Postgres PostgresConfig `envPrefix:"POSTGRES_URL"`
+		HTTP       HTTPConfig       `envPrefix:"HTTP_CONFIG"`
+		Postgres   PostgresConfig   `envPrefix:"POSTGRES_URL"`
+		PostSender PostSenderConfig `envPrefix:"POST_SENDER"`
 	}
 
 	HTTPConfig struct {
@@ -25,6 +27,13 @@ type (
 		User     string `env:"DB_USER"`
 		Password string `env:"DB_PASSWORD"`
 		SSLMode  string `env:"DB_SSLMODE" default:"disable"`
+	}
+
+	PostSenderConfig struct {
+		Email    string `env:"POST_SENDER_EMAIL"`
+		Password string `env:"POST_SENDER_PASSWORD"`
+		SMTPHost string `env:"POST_SENDER_SMTP_HOST" default:"smtp.gmail.com"`
+		SMTPPort string `env:"POST_SENDER_SMTP_PORT" default:"587"`
 	}
 )
 
@@ -53,4 +62,13 @@ func (pgConfig *PostgresConfig) BuildConnectionString() string {
 		pgConfig.Password,
 		pgConfig.SSLMode,
 	)
+}
+
+func (psConfig *PostSenderConfig) AuthenticateMailer() mailer.Authentication {
+	return mailer.Authentication{
+		Username: psConfig.Email,
+		Password: psConfig.Password,
+		Host:     psConfig.SMTPHost,
+		Port:     psConfig.SMTPPort,
+	}
 }
