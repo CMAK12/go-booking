@@ -31,7 +31,7 @@ func NewBookingServiceRelationStorage(db *pgxpool.Pool) BookingServiceRelationSt
 }
 
 func (s *bookingServiceRelationStorage) List(ctx context.Context, filter ListBookingServiceRelationFilter) ([]models.BookingServiceRelation, error) {
-	query, args, err := s.builder.
+	qb := s.builder.
 		Select(
 			"bs.booking_id", "bs.service_id",
 
@@ -53,12 +53,16 @@ func (s *bookingServiceRelationStorage) List(ctx context.Context, filter ListBoo
 		Join(fmt.Sprintf("%s s ON bs.service_id = s.id", extraServiceTable)).
 		Join(fmt.Sprintf("%s u ON b.user_id = u.id", userTable)).
 		Join(fmt.Sprintf("%s r ON b.room_id = r.id", roomTable)).
-		Join(fmt.Sprintf("%s h ON r.hotel_id = h.id", hotelTable)).
-		Where(sq.Or{
-			sq.Eq{"bs.booking_id": filter.BookingID},
-			sq.Eq{"bs.service_id": filter.ExtraServiceID},
-		}).
-		ToSql()
+		Join(fmt.Sprintf("%s h ON r.hotel_id = h.id", hotelTable))
+
+	if filter.BookingID != "" {
+		qb.Where(sq.Eq{"bs.booking_id": filter.BookingID})
+	}
+	if filter.ExtraServiceID != "" {
+		qb.Where(sq.Eq{"bs.service_id": filter.ExtraServiceID})
+	}
+
+	query, args, err := qb.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
