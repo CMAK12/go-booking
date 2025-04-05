@@ -3,18 +3,15 @@ package storage
 import (
 	"context"
 
-	"go-booking/internal/dto"
 	"go-booking/internal/models"
 )
 
 const (
-	userTable                   = "users"
-	bookingTable                = "bookings"
-	roomTable                   = "rooms"
-	hotelTable                  = "hotels"
-	extraServiceTable           = "services"
-	bookingServiceRelationTable = "booking_services"
-	discountTable               = "discounts"
+	userTable         = "users"
+	bookingTable      = "bookings"
+	roomTable         = "rooms"
+	hotelTable        = "hotels"
+	extraServiceTable = "services"
 )
 
 type (
@@ -50,19 +47,6 @@ type (
 		List(ctx context.Context, filter ListExtraServiceFilter) ([]models.ExtraService, error)
 		Create(ctx context.Context, extraService models.ExtraService) (models.ExtraService, error)
 		Update(ctx context.Context, id string, extraService models.ExtraService) (models.ExtraService, error)
-		Delete(ctx context.Context, id string) error
-	}
-
-	BookingServiceRelationStorage interface {
-		List(ctx context.Context, filter ListBookingServiceRelationFilter) ([]models.BookingServiceRelation, error)
-		Create(ctx context.Context, bookingID, serviceID string) (dto.CreateBookingServiceRelationResponse, error)
-		Delete(ctx context.Context, bookingID, serviceID string) error
-	}
-
-	DiscountStorage interface {
-		List(ctx context.Context, filter ListDiscountFilter) ([]models.Discount, error)
-		Create(ctx context.Context, discount models.Discount) (models.Discount, error)
-		Update(ctx context.Context, id string, discount models.Discount) (models.Discount, error)
 		Delete(ctx context.Context, id string) error
 	}
 )

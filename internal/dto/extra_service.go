@@ -1,6 +1,7 @@
 package dto
 
 type CreateExtraServiceRequest struct {
-	Name  string `json:"name" validate:"required"`
-	Price int    `json:"price" validate:"required"`
+	RoomID string `json:"room_id" validate:"required"`
+	Name   string `json:"name" validate:"required"`
+	Price  int    `json:"price" validate:"required"`
 }

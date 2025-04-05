@@ -15,9 +15,10 @@ type extraServiceStorage struct {
 }
 
 type ListExtraServiceFilter struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Price int    `json:"price"`
+	ID     string `json:"id"`
+	RoomID string `json:"room_id"`
+	Name   string `json:"name"`
+	Price  int    `json:"price"`
 }
 
 func NewExtraServiceStorage(db *pgxpool.Pool) ExtraServiceStorage {
@@ -31,11 +32,16 @@ func NewExtraServiceStorage(db *pgxpool.Pool) ExtraServiceStorage {
 
 func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceFilter) ([]models.ExtraService, error) {
 	qb := s.builder.
-		Select("id", "name", "price").
+		Select(
+			"id", "room_id", "name", "price",
+		).
 		From(extraServiceTable)
 
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"id": filter.ID})
+	}
+	if filter.RoomID != "" {
+		qb = qb.Where(sq.Eq{"room_id": filter.RoomID})
 	}
 	if filter.Name != "" {
 		qb = qb.Where(sq.Like{"name": "%" + filter.Name + "%"})
@@ -58,7 +64,9 @@ func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceF
 	var extraServices []models.ExtraService
 	for rows.Next() {
 		var extraService models.ExtraService
-		err = rows.Scan(&extraService.ID, &extraService.Name, &extraService.Price)
+		err = rows.Scan(
+			&extraService.ID, &extraService.RoomID, &extraService.Name, &extraService.Price,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
@@ -71,8 +79,8 @@ func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceF
 func (s *extraServiceStorage) Create(ctx context.Context, extraService models.ExtraService) (models.ExtraService, error) {
 	query, args, err := s.builder.
 		Insert(extraServiceTable).
-		Columns("id", "name", "price").
-		Values(extraService.ID, extraService.Name, extraService.Price).
+		Columns("id", "room_id", "name", "price").
+		Values(extraService.ID, extraService.RoomID, extraService.Name, extraService.Price).
 		ToSql()
 	if err != nil {
 		return models.ExtraService{}, fmt.Errorf("failed to build query: %w", err)

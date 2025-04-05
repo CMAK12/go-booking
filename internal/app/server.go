@@ -37,16 +37,12 @@ func MustRun() {
 	roomStorage := storage.NewRoomStorage(pgConn)
 	hotelStorage := storage.NewHotelStorage(pgConn)
 	extraServiceStorage := storage.NewExtraServiceStorage(pgConn)
-	bookingServiceRelationStorage := storage.NewBookingServiceRelationStorage(pgConn)
-	discountStorage := storage.NewDiscountStorage(pgConn)
 
 	userService := service.NewUserService(userStorage)
 	bookingService := service.NewBookingService(bookingStorage, mailAuth)
 	hotelService := service.NewHotelService(hotelStorage)
-	roomService := service.NewRoomService(roomStorage)
+	roomService := service.NewRoomService(roomStorage, extraServiceStorage, hotelStorage)
 	extraServiceService := service.NewExtraServiceService(extraServiceStorage)
-	bookingServiceRelationService := service.NewBookingServiceRelationService(bookingServiceRelationStorage)
-	discountService := service.NewDiscountService(discountStorage)
 
 	handler := v1.NewHandler(
 		userService,
@@ -54,8 +50,6 @@ func MustRun() {
 		hotelService,
 		roomService,
 		extraServiceService,
-		bookingServiceRelationService,
-		discountService,
 	)
 
 	router := chi.NewRouter()

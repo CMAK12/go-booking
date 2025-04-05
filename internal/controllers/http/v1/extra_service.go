@@ -14,8 +14,9 @@ import (
 
 func (h *Handler) listExtraService(w http.ResponseWriter, r *http.Request) {
 	filter := storage.ListExtraServiceFilter{
-		ID:   r.URL.Query().Get("id"),
-		Name: r.URL.Query().Get("name"),
+		ID:     r.URL.Query().Get("id"),
+		RoomID: r.URL.Query().Get("room_id"),
+		Name:   r.URL.Query().Get("name"),
 	}
 
 	if price := r.URL.Query().Get("price"); price != "" {

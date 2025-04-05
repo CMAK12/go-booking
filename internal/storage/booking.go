@@ -37,7 +37,7 @@ func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]
 	qb := s.builder.
 		Select(
 			"bt.id", "bt.start_date", "bt.end_date", "bt.status",
-			"rt.id", "rt.type", "rt.capacity", "rt.price", "rt.available",
+			"rt.id", "rt.type", "rt.capacity", "rt.price", "rt.quantity",
 			"ut.id", "ut.name", "ut.email", "ut.password", "ut.role", "ut.created_at",
 			"ht.id", "ht.name", "ht.address", "ht.city", "ht.description", "ht.rating",
 		).
@@ -81,7 +81,7 @@ func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]
 		var booking models.Booking
 		err := rows.Scan(
 			&booking.ID, &booking.StartDate, &booking.EndDate, &booking.Status,
-			&booking.Room.ID, &booking.Room.Type, &booking.Room.Capacity, &booking.Room.Price, &booking.Room.Available,
+			&booking.Room.ID, &booking.Room.Type, &booking.Room.Capacity, &booking.Room.Price, &booking.Room.Quantity,
 			&booking.User.ID, &booking.User.Name, &booking.User.Email, &booking.User.Password, &booking.User.Role, &booking.User.CreatedAt,
 			&booking.Room.Hotel.ID, &booking.Room.Hotel.Name, &booking.Room.Hotel.Address, &booking.Room.Hotel.City, &booking.Room.Hotel.Description, &booking.Room.Hotel.Rating,
 		)
@@ -94,12 +94,6 @@ func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]
 }
 
 func (s *bookingStorage) Create(ctx context.Context, booking models.Booking) (models.Booking, error) {
-	tx, err := s.db.Begin(ctx)
-	if err != nil {
-		return models.Booking{}, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
-
 	query, args, err := s.builder.
 		Insert(bookingTable).
 		Columns("id", "user_id", "room_id", "start_date", "end_date", "status").
@@ -109,40 +103,9 @@ func (s *bookingStorage) Create(ctx context.Context, booking models.Booking) (mo
 		return models.Booking{}, fmt.Errorf("failed to build query: %w", err)
 	}
 
-	_, err = tx.Exec(ctx, query, args...)
+	_, err = s.db.Exec(ctx, query, args...)
 	if err != nil {
 		return models.Booking{}, fmt.Errorf("failed to execute query: %w", err)
-	}
-
-	query, args, err = s.builder.
-		Select(
-			"bt.id", "bt.start_date", "bt.end_date", "bt.status",
-			"rt.id", "rt.type", "rt.capacity", "rt.price", "rt.available",
-			"ut.id", "ut.name", "ut.email", "ut.password", "ut.role", "ut.created_at",
-			"ht.id", "ht.name", "ht.address", "ht.city", "ht.description", "ht.rating",
-		).
-		From(fmt.Sprintf("%s AS bt", bookingTable)).
-		Join(fmt.Sprintf("%s AS rt ON bt.room_id = rt.id", roomTable)).
-		Join(fmt.Sprintf("%s AS ut ON bt.user_id = ut.id", userTable)).
-		Join(fmt.Sprintf("%s AS ht ON rt.hotel_id = ht.id", hotelTable)).
-		Where(sq.Eq{"bt.id": booking.ID}).
-		ToSql()
-	if err != nil {
-		return models.Booking{}, fmt.Errorf("failed to build query: %w", err)
-	}
-
-	err = tx.QueryRow(ctx, query, args...).Scan(
-		&booking.ID, &booking.StartDate, &booking.EndDate, &booking.Status,
-		&booking.Room.ID, &booking.Room.Type, &booking.Room.Capacity, &booking.Room.Price, &booking.Room.Available,
-		&booking.User.ID, &booking.User.Name, &booking.User.Email, &booking.User.Password, &booking.User.Role, &booking.User.CreatedAt,
-		&booking.Room.Hotel.ID, &booking.Room.Hotel.Name, &booking.Room.Hotel.Address, &booking.Room.Hotel.City, &booking.Room.Hotel.Description, &booking.Room.Hotel.Rating,
-	)
-	if err != nil {
-		return models.Booking{}, fmt.Errorf("failed to scan booking: %w", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return models.Booking{}, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return booking, nil

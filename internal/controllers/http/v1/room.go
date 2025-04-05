@@ -39,6 +39,14 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 		}
 		filter.Capacity = c
 	}
+	if quantity := query.Get("quantity"); quantity != "" {
+		q, err := strconv.Atoi(quantity)
+		if err != nil {
+			http.Error(w, "Invalid quantity value", http.StatusBadRequest)
+			return
+		}
+		filter.Quantity = q
+	}
 
 	rooms, err := h.roomService.List(r.Context(), filter)
 	if err != nil {

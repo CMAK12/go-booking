@@ -58,6 +58,19 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		log.Println("email sent successfully to:", booking.User.Email)
 	}()
 
+	bookings, err := s.List(ctx, storage.ListBookingFilter{ID: booking.ID})
+	if err != nil {
+		log.Println("failed to list bookings after creation:", err)
+		return models.Booking{}, err
+	}
+
+	for _, b := range bookings {
+		if b.ID == booking.ID {
+			booking = b
+			break
+		}
+	}
+
 	return booking, nil
 }
 

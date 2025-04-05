@@ -43,17 +43,4 @@ type (
 		Update(ctx context.Context, id string, extraService models.ExtraService) (models.ExtraService, error)
 		Delete(ctx context.Context, id string) error
 	}
-
-	BookingServiceRelationService interface {
-		List(ctx context.Context, filter storage.ListBookingServiceRelationFilter) ([]models.BookingServiceRelation, error)
-		Create(ctx context.Context, dto dto.CreateBookingServiceRelationRequest) (dto.CreateBookingServiceRelationResponse, error)
-		Delete(ctx context.Context, bookingID, serviceID string) error
-	}
-
-	DiscountService interface {
-		List(ctx context.Context, filter storage.ListDiscountFilter) ([]models.Discount, error)
-		Create(ctx context.Context, dto dto.CreateDiscountRequest) (models.Discount, error)
-		Update(ctx context.Context, id string, discount models.Discount) (models.Discount, error)
-		Delete(ctx context.Context, id string) error
-	}
 )

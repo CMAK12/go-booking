@@ -8,13 +8,11 @@ import (
 )
 
 type Handler struct {
-	userService                   service.UserService
-	bookingService                service.BookingService
-	hotelService                  service.HotelService
-	roomService                   service.RoomService
-	extraService                  service.ExtraServiceService
-	bookingServiceRelationService service.BookingServiceRelationService
-	discountService               service.DiscountService
+	userService    service.UserService
+	bookingService service.BookingService
+	hotelService   service.HotelService
+	roomService    service.RoomService
+	extraService   service.ExtraServiceService
 }
 
 func NewHandler(
@@ -23,17 +21,13 @@ func NewHandler(
 	hotelService service.HotelService,
 	roomService service.RoomService,
 	extraService service.ExtraServiceService,
-	bookingServiceRelationService service.BookingServiceRelationService,
-	discountService service.DiscountService,
 ) *Handler {
 	return &Handler{
-		userService:                   userService,
-		bookingService:                bookingService,
-		hotelService:                  hotelService,
-		roomService:                   roomService,
-		extraService:                  extraService,
-		bookingServiceRelationService: bookingServiceRelationService,
-		discountService:               discountService,
+		userService:    userService,
+		bookingService: bookingService,
+		hotelService:   hotelService,
+		roomService:    roomService,
+		extraService:   extraService,
 	}
 }
 
@@ -66,22 +60,11 @@ func (h *Handler) SetupRoutes(r *chi.Mux) {
 			r.Put("/{id}", h.updateRoom)
 			r.Delete("/{id}", h.deleteRoom)
 		})
-		r.Route("/extra_services", func(r chi.Router) {
+		r.Route("/services", func(r chi.Router) {
 			r.Get("/", h.listExtraService)
 			r.Post("/", h.createExtraService)
 			r.Put("/{id}", h.updateExtraService)
 			r.Delete("/{id}", h.deleteExtraService)
-		})
-		r.Route("/booking_service", func(r chi.Router) {
-			r.Get("/", h.listBookingService)
-			r.Post("/", h.createBookingService)
-			r.Delete("/", h.deleteBookingService)
-		})
-		r.Route("/discounts", func(r chi.Router) {
-			r.Get("/", h.listDiscount)
-			r.Post("/", h.createDiscount)
-			r.Put("/{id}", h.updateDiscount)
-			r.Delete("/{id}", h.deleteDiscount)
 		})
 	})
 }

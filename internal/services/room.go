@@ -10,12 +10,20 @@ import (
 )
 
 type roomService struct {
-	roomStorage storage.RoomStorage
+	roomStorage         storage.RoomStorage
+	extraServiceStorage storage.ExtraServiceStorage
+	hotelStorage        storage.HotelStorage
 }
 
-func NewRoomService(roomStorage storage.RoomStorage) RoomService {
+func NewRoomService(
+	roomStorage storage.RoomStorage,
+	extraServiceStorage storage.ExtraServiceStorage,
+	hotelStorage storage.HotelStorage,
+) RoomService {
 	return &roomService{
-		roomStorage: roomStorage,
+		roomStorage:         roomStorage,
+		extraServiceStorage: extraServiceStorage,
+		hotelStorage:        hotelStorage,
 	}
 }
 
@@ -25,6 +33,22 @@ func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) (
 		log.Println("Error listing rooms:", err)
 		return nil, err
 	}
+	extraServices, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{
+		RoomID: filter.ID,
+	})
+	if err != nil {
+		log.Println("Error listing extra services in room service:", err)
+		return nil, err
+	}
+
+	for i := range rooms {
+		for _, extraService := range extraServices {
+			if rooms[i].ID == extraService.RoomID {
+				rooms[i].ExtraServices = append(rooms[i].ExtraServices, extraService)
+			}
+		}
+	}
+
 	return rooms, nil
 }
 
@@ -33,6 +57,20 @@ func (s *roomService) Create(ctx context.Context, dto dto.CreateRoomRequest) (mo
 	if err != nil {
 		log.Println("Error creating room:", err)
 		return models.Room{}, err
+	}
+
+	hotels, err := s.hotelStorage.List(ctx, storage.ListHotelFilter{
+		ID: dto.HotelID,
+	})
+	if err != nil {
+		log.Println("Error listing hotels in room service:", err)
+		return models.Room{}, err
+	}
+
+	for i := range hotels {
+		if hotels[i].ID == dto.HotelID {
+			room.Hotel = hotels[i]
+		}
 	}
 
 	return room, nil
