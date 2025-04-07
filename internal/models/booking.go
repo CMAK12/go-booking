@@ -3,8 +3,6 @@ package models
 import (
 	"time"
 
-	"go-booking/internal/dto"
-
 	"github.com/google/uuid"
 )
 
@@ -18,48 +16,52 @@ const (
 
 type Booking struct {
 	ID        string        `json:"id"`
-	User      User          `json:"user"`
-	Room      Room          `json:"room"`
+	UserID    string        `json:"user_id"`
+	RoomID    string        `json:"room_id"`
+	HotelID   string        `json:"hotel_id"`
 	StartDate time.Time     `json:"start_date"`
 	EndDate   time.Time     `json:"end_date"`
 	Status    BookingStatus `json:"status"` // pending, confirmed, cancelled
 }
 
-func NewBooking(dto dto.CreateBookingRequest) Booking {
-	startDate, _ := time.Parse(time.RFC3339, dto.StartDate)
-	endDate, _ := time.Parse(time.RFC3339, dto.EndDate)
+func NewBooking(
+	userID string,
+	roomID string,
+	hotelID string,
+	startDateStr string,
+	endDateStr string,
+) Booking {
+	startDate, _ := time.Parse(time.RFC3339, startDateStr)
+	endDate, _ := time.Parse(time.RFC3339, endDateStr)
 
 	return Booking{
-		ID: uuid.NewString(),
-		User: User{
-			ID: dto.UserID,
-		},
-		Room: Room{
-			ID: dto.RoomID,
-			Hotel: Hotel{
-				ID: dto.HotelID,
-			},
-		},
+		ID:        uuid.NewString(),
+		UserID:    userID,
+		RoomID:    roomID,
+		HotelID:   hotelID,
 		StartDate: startDate,
 		EndDate:   endDate,
 		Status:    BookingStatusPending,
 	}
 }
 
-func NewBookingFromDTO(id string, dto dto.UpdateBookingRequest) Booking {
-	startDate, _ := time.Parse(time.RFC3339, dto.StartDate)
-	endDate, _ := time.Parse(time.RFC3339, dto.EndDate)
+func NewBookingFromDTO(
+	id string,
+	userID string,
+	roomID string,
+	startDateStr string,
+	endDateStr string,
+	status string,
+) Booking {
+	startDate, _ := time.Parse(time.RFC3339, startDateStr)
+	endDate, _ := time.Parse(time.RFC3339, endDateStr)
 
 	return Booking{
-		ID: id,
-		User: User{
-			ID: dto.UserID,
-		},
-		Room: Room{
-			ID: dto.RoomID,
-		},
+		ID:        id,
+		UserID:    userID,
+		RoomID:    roomID,
 		StartDate: startDate,
 		EndDate:   endDate,
-		Status:    BookingStatus(dto.Status),
+		Status:    BookingStatus(status),
 	}
 }

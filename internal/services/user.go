@@ -26,13 +26,15 @@ func (s *userService) List(ctx context.Context, filter storage.ListUserFilter) (
 }
 
 func (s *userService) Create(ctx context.Context, dto dto.CreateUserRequest) (models.User, error) {
-	user, err := s.userStorage.Create(ctx, models.NewUser(dto))
+	user := models.NewUser(dto.Email, dto.Name, dto.Password)
+
+	createdUser, err := s.userStorage.Create(ctx, user)
 	if err != nil {
 		log.Println("error creating user", err)
 		return models.User{}, err
 	}
 
-	return user, nil
+	return createdUser, nil
 }
 
 func (s *userService) Update(ctx context.Context, id string, user models.User) (models.User, error) {

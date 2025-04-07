@@ -36,34 +36,11 @@ func NewBookingStorage(db *pgxpool.Pool) BookingStorage {
 func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]models.Booking, error) {
 	qb := s.builder.
 		Select(
-			"bt.id", "bt.start_date", "bt.end_date", "bt.status",
-			"rt.id", "rt.type", "rt.capacity", "rt.price", "rt.quantity",
-			"ut.id", "ut.name", "ut.email", "ut.password", "ut.role", "ut.created_at",
-			"ht.id", "ht.name", "ht.address", "ht.city", "ht.description", "ht.rating",
+			"bt.id", "bt.user_id", "bt.room_id", "bt.start_date", "bt.end_date", "bt.status",
 		).
-		From(fmt.Sprintf("%s AS bt", bookingTable)).
-		Join(fmt.Sprintf("%s AS rt ON bt.room_id = rt.id", roomTable)).
-		Join(fmt.Sprintf("%s AS ut ON bt.user_id = ut.id", userTable)).
-		Join(fmt.Sprintf("%s AS ht ON rt.hotel_id = ht.id", hotelTable))
+		From(fmt.Sprintf("%s AS bt", bookingTable))
 
-	if filter.ID != "" {
-		qb = qb.Where(sq.Eq{"bt.id": filter.ID})
-	}
-	if filter.RoomID != "" {
-		qb = qb.Where(sq.Eq{"bt.room_id": filter.RoomID})
-	}
-	if filter.UserID != "" {
-		qb = qb.Where(sq.Eq{"bt.user_id": filter.UserID})
-	}
-	if filter.StartDate != "" {
-		qb = qb.Where(sq.GtOrEq{"bt.start_date": filter.StartDate})
-	}
-	if filter.EndDate != "" {
-		qb = qb.Where(sq.LtOrEq{"bt.end_date": filter.EndDate})
-	}
-	if filter.Status != "" {
-		qb = qb.Where(sq.Eq{"bt.status": filter.Status})
-	}
+	qb = buildSearchBookingQuery(qb, filter)
 
 	query, args, err := qb.ToSql()
 	if err != nil {
@@ -80,10 +57,7 @@ func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]
 	for rows.Next() {
 		var booking models.Booking
 		err := rows.Scan(
-			&booking.ID, &booking.StartDate, &booking.EndDate, &booking.Status,
-			&booking.Room.ID, &booking.Room.Type, &booking.Room.Capacity, &booking.Room.Price, &booking.Room.Quantity,
-			&booking.User.ID, &booking.User.Name, &booking.User.Email, &booking.User.Password, &booking.User.Role, &booking.User.CreatedAt,
-			&booking.Room.Hotel.ID, &booking.Room.Hotel.Name, &booking.Room.Hotel.Address, &booking.Room.Hotel.City, &booking.Room.Hotel.Description, &booking.Room.Hotel.Rating,
+			&booking.ID, &booking.UserID, &booking.RoomID, &booking.StartDate, &booking.EndDate, &booking.Status,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan booking: %w", err)
@@ -97,7 +71,7 @@ func (s *bookingStorage) Create(ctx context.Context, booking models.Booking) (mo
 	query, args, err := s.builder.
 		Insert(bookingTable).
 		Columns("id", "user_id", "room_id", "start_date", "end_date", "status").
-		Values(booking.ID, booking.User.ID, booking.Room.ID, booking.StartDate, booking.EndDate, booking.Status).
+		Values(booking.ID, booking.UserID, booking.RoomID, booking.StartDate, booking.EndDate, booking.Status).
 		ToSql()
 	if err != nil {
 		return models.Booking{}, fmt.Errorf("failed to build query: %w", err)
@@ -118,8 +92,8 @@ func (s *bookingStorage) Update(ctx context.Context, id string, booking models.B
 
 	query, args, err := s.builder.
 		Update(bookingTable).
-		Set("user_id", booking.User.ID).
-		Set("room_id", booking.Room.ID).
+		Set("user_id", booking.UserID).
+		Set("room_id", booking.RoomID).
 		Set("start_date", booking.StartDate).
 		Set("end_date", booking.EndDate).
 		Set("status", booking.Status).
@@ -153,4 +127,27 @@ func (s *bookingStorage) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) sq.SelectBuilder {
+	if filter.ID != "" {
+		qb = qb.Where(sq.Eq{"bt.id": filter.ID})
+	}
+	if filter.RoomID != "" {
+		qb = qb.Where(sq.Eq{"bt.room_id": filter.RoomID})
+	}
+	if filter.UserID != "" {
+		qb = qb.Where(sq.Eq{"bt.user_id": filter.UserID})
+	}
+	if filter.StartDate != "" {
+		qb = qb.Where(sq.GtOrEq{"bt.start_date": filter.StartDate})
+	}
+	if filter.EndDate != "" {
+		qb = qb.Where(sq.LtOrEq{"bt.end_date": filter.EndDate})
+	}
+	if filter.Status != "" {
+		qb = qb.Where(sq.Eq{"bt.status": filter.Status})
+	}
+
+	return qb
 }

@@ -38,18 +38,7 @@ func (s *userStorage) List(ctx context.Context, filter ListUserFilter) ([]models
 		Select("id", "name", "email", "role", "created_at").
 		From(userTable)
 
-	if filter.ID != "" {
-		qb = qb.Where(sq.Eq{"id": filter.ID})
-	}
-	if filter.Username != "" {
-		qb = qb.Where(sq.Eq{"name": filter.Username})
-	}
-	if filter.Email != "" {
-		qb = qb.Where(sq.Eq{"email": filter.Email})
-	}
-	if filter.Role != "" {
-		qb = qb.Where(sq.Eq{"role": filter.Role})
-	}
+	qb = buildSearchUserQuery(qb, filter)
 
 	query, args, err := qb.ToSql()
 	if err != nil {
@@ -131,4 +120,21 @@ func (s *userStorage) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
 	return nil
+}
+
+func buildSearchUserQuery(qb sq.SelectBuilder, filter ListUserFilter) sq.SelectBuilder {
+	if filter.ID != "" {
+		qb = qb.Where(sq.Eq{"id": filter.ID})
+	}
+	if filter.Username != "" {
+		qb = qb.Where(sq.Eq{"name": filter.Username})
+	}
+	if filter.Email != "" {
+		qb = qb.Where(sq.Eq{"email": filter.Email})
+	}
+	if filter.Role != "" {
+		qb = qb.Where(sq.Eq{"role": filter.Role})
+	}
+
+	return qb
 }

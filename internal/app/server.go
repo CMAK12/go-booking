@@ -39,10 +39,17 @@ func MustRun() {
 	extraServiceStorage := storage.NewExtraServiceStorage(pgConn)
 
 	userService := service.NewUserService(userStorage)
-	bookingService := service.NewBookingService(bookingStorage, mailAuth)
 	hotelService := service.NewHotelService(hotelStorage)
-	roomService := service.NewRoomService(roomStorage, extraServiceStorage, hotelStorage)
+	roomService := service.NewRoomService(roomStorage, extraServiceStorage)
 	extraServiceService := service.NewExtraServiceService(extraServiceStorage)
+	bookingService := service.NewBookingService(
+		bookingStorage,
+		hotelStorage,
+		roomService,
+		userStorage,
+		extraServiceStorage,
+		mailAuth,
+	)
 
 	handler := v1.NewHandler(
 		userService,

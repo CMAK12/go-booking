@@ -1,8 +1,6 @@
 package models
 
 import (
-	"go-booking/internal/dto"
-
 	"github.com/google/uuid"
 )
 
@@ -13,11 +11,15 @@ type ExtraService struct {
 	Price  int    `json:"price"`
 }
 
-func NewExtraService(dto dto.CreateExtraServiceRequest) ExtraService {
+func NewExtraService(
+	roomID string,
+	name string,
+	price int,
+) ExtraService {
 	return ExtraService{
 		ID:     uuid.NewString(),
-		RoomID: dto.RoomID,
-		Name:   dto.Name,
-		Price:  dto.Price,
+		RoomID: roomID,
+		Name:   name,
+		Price:  price,
 	}
 }

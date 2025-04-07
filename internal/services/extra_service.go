@@ -27,12 +27,17 @@ func (s *extraServiceService) List(ctx context.Context, filter storage.ListExtra
 }
 
 func (s *extraServiceService) Create(ctx context.Context, dto dto.CreateExtraServiceRequest) (models.ExtraService, error) {
-	extraService := models.NewExtraService(dto)
-	extraService, err := s.extraServiceStorage.Create(ctx, extraService)
+	extraService := models.NewExtraService(
+		dto.RoomID,
+		dto.Name,
+		dto.Price,
+	)
+
+	newExtraService, err := s.extraServiceStorage.Create(ctx, extraService)
 	if err != nil {
 		return models.ExtraService{}, fmt.Errorf("failed to create extra service: %w", err)
 	}
-	return extraService, nil
+	return newExtraService, nil
 }
 
 func (s *extraServiceService) Update(ctx context.Context, id string, extraService models.ExtraService) (models.ExtraService, error) {

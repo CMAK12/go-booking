@@ -38,40 +38,13 @@ func NewRoomStorage(db *pgxpool.Pool) RoomStorage {
 func (s *roomStorage) List(ctx context.Context, filter ListRoomFilter) ([]models.Room, error) {
 	qb := s.builder.
 		Select(
-			"r.id", "r.type", "r.capacity", "r.price", "r.quantity", "r.available",
-
-			"h.id", "h.name", "h.address", "h.city", "h.description", "h.rating",
+			"r.id", "r.hotel_id", "r.type", "r.capacity", "r.price", "r.quantity",
 		).
-		From(fmt.Sprintf("%s AS r", roomTable)).
-		Join(fmt.Sprintf("%s AS h ON r.hotel_id = h.id", hotelTable))
+		From(fmt.Sprintf("%s AS r", roomTable))
 
-	if filter.ID != "" {
-		qb = qb.Where(sq.Eq{"r.id": filter.ID})
-	}
-	if filter.HotelID != "" {
-		qb = qb.Where(sq.Eq{"r.hotel_id": filter.HotelID})
-	}
-	if filter.Name != "" {
-		qb = qb.Where(sq.Like{"r.name": "%" + filter.Name + "%"})
-	}
-	if filter.Description != "" {
-		qb = qb.Where(sq.Like{"r.description": "%" + filter.Description + "%"})
-	}
-	if filter.Price > 0 {
-		qb = qb.Where(sq.Eq{"r.price": filter.Price})
-	}
-	if filter.Capacity > 0 {
-		qb = qb.Where(sq.Eq{"r.capacity": filter.Capacity})
-	}
-	if filter.Quantity > 0 {
-		qb = qb.Where(sq.Eq{"r.quantity": filter.Quantity})
-	}
-	if filter.Available != "" {
-		available, err := strconv.ParseBool(filter.Available)
-		if err != nil {
-			return nil, fmt.Errorf("invalid available value: %w", err)
-		}
-		qb = qb.Where(sq.Eq{"r.available": available})
+	qb, err := buildSearchRoomFilter(qb, filter)
+	if err != nil {
+		return nil, fmt.Errorf("invalid available value: %w", err)
 	}
 
 	query, args, err := qb.ToSql()
@@ -87,16 +60,13 @@ func (s *roomStorage) List(ctx context.Context, filter ListRoomFilter) ([]models
 
 	var rooms []models.Room
 	for rows.Next() {
-		i := 0
 		var room models.Room
 		err := rows.Scan(
-			&room.ID, &room.Type, &room.Capacity, &room.Price, &room.Quantity,
-			&room.Hotel.ID, &room.Hotel.Name, &room.Hotel.Address, &room.Hotel.City, &room.Hotel.Description, &room.Hotel.Rating,
+			&room.ID, &room.HotelID, &room.Type, &room.Capacity, &room.Price, &room.Quantity,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
-		i++
 		rooms = append(rooms, room)
 	}
 
@@ -107,7 +77,7 @@ func (s *roomStorage) Create(ctx context.Context, room models.Room) (models.Room
 	query, args, err := s.builder.
 		Insert(roomTable).
 		Columns("id", "hotel_id", "type", "capacity", "price", "quantity").
-		Values(room.ID, room.Hotel.ID, room.Type, room.Capacity, room.Price, room.Quantity).
+		Values(room.ID, room.HotelID, room.Type, room.Capacity, room.Price, room.Quantity).
 		ToSql()
 	if err != nil {
 		return models.Room{}, fmt.Errorf("failed to build query: %w", err)
@@ -162,4 +132,37 @@ func (s *roomStorage) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
 	return nil
+}
+
+func buildSearchRoomFilter(qb sq.SelectBuilder, filter ListRoomFilter) (sq.SelectBuilder, error) {
+	if filter.ID != "" {
+		qb = qb.Where(sq.Eq{"r.id": filter.ID})
+	}
+	if filter.HotelID != "" {
+		qb = qb.Where(sq.Eq{"r.hotel_id": filter.HotelID})
+	}
+	if filter.Name != "" {
+		qb = qb.Where(sq.Like{"r.name": "%" + filter.Name + "%"})
+	}
+	if filter.Description != "" {
+		qb = qb.Where(sq.Like{"r.description": "%" + filter.Description + "%"})
+	}
+	if filter.Price > 0 {
+		qb = qb.Where(sq.Eq{"r.price": filter.Price})
+	}
+	if filter.Capacity > 0 {
+		qb = qb.Where(sq.Eq{"r.capacity": filter.Capacity})
+	}
+	if filter.Quantity > 0 {
+		qb = qb.Where(sq.Eq{"r.quantity": filter.Quantity})
+	}
+	if filter.Available != "" {
+		available, err := strconv.ParseBool(filter.Available)
+		if err != nil {
+			return qb, err
+		}
+		qb = qb.Where(sq.Eq{"r.available": available})
+	}
+
+	return qb, nil
 }

@@ -28,7 +28,15 @@ func (s *hotelService) List(ctx context.Context, filter storage.ListHotelFilter)
 }
 
 func (s *hotelService) Create(ctx context.Context, dto dto.CreateHotelRequest) (models.Hotel, error) {
-	newHotel, err := s.hotelStorage.Create(ctx, models.NewHotel(dto))
+	hotel := models.NewHotel(
+		dto.Name,
+		dto.Address,
+		dto.City,
+		dto.Description,
+		float64(dto.Rating),
+	)
+
+	newHotel, err := s.hotelStorage.Create(ctx, hotel)
 	if err != nil {
 		log.Println("failed to create hotel:", err)
 		return models.Hotel{}, err

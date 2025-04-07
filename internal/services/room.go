@@ -12,68 +12,65 @@ import (
 type roomService struct {
 	roomStorage         storage.RoomStorage
 	extraServiceStorage storage.ExtraServiceStorage
-	hotelStorage        storage.HotelStorage
 }
 
 func NewRoomService(
 	roomStorage storage.RoomStorage,
 	extraServiceStorage storage.ExtraServiceStorage,
-	hotelStorage storage.HotelStorage,
 ) RoomService {
 	return &roomService{
 		roomStorage:         roomStorage,
 		extraServiceStorage: extraServiceStorage,
-		hotelStorage:        hotelStorage,
 	}
 }
 
-func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) ([]models.Room, error) {
+func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) ([]dto.ListRoomResponse, error) {
 	rooms, err := s.roomStorage.List(ctx, filter)
 	if err != nil {
 		log.Println("Error listing rooms:", err)
 		return nil, err
 	}
-	extraServices, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{
-		RoomID: filter.ID,
-	})
-	if err != nil {
-		log.Println("Error listing extra services in room service:", err)
-		return nil, err
-	}
 
-	for i := range rooms {
-		for _, extraService := range extraServices {
-			if rooms[i].ID == extraService.RoomID {
-				rooms[i].ExtraServices = append(rooms[i].ExtraServices, extraService)
-			}
+	var responseRoom []dto.ListRoomResponse
+	for _, room := range rooms {
+		ess, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomID: room.ID})
+		if err != nil {
+			log.Println("Error listing extra services:", err)
+			return nil, err
 		}
+
+		responseRoom = append(responseRoom, dto.ListRoomResponse{
+			ID:            room.ID,
+			HotelID:       room.HotelID,
+			ExtraServices: ess,
+			Type:          room.Type,
+			Capacity:      room.Capacity,
+			Price:         room.Price,
+			Quantity:      room.Quantity,
+		})
 	}
 
-	return rooms, nil
+	return responseRoom, nil
 }
 
 func (s *roomService) Create(ctx context.Context, dto dto.CreateRoomRequest) (models.Room, error) {
-	room, err := s.roomStorage.Create(ctx, models.NewRoom(dto))
+	room := models.NewRoom(
+		dto.HotelID,
+		dto.Type,
+		dto.Capacity,
+		float64(dto.Price),
+		dto.Quantity,
+	)
+
+	createdRoom, err := s.roomStorage.Create(ctx, room)
 	if err != nil {
 		log.Println("Error creating room:", err)
 		return models.Room{}, err
 	}
 
-	hotels, err := s.hotelStorage.List(ctx, storage.ListHotelFilter{
-		ID: dto.HotelID,
-	})
-	if err != nil {
-		log.Println("Error listing hotels in room service:", err)
-		return models.Room{}, err
-	}
+	createdRoom.HotelID = dto.HotelID
 
-	for i := range hotels {
-		if hotels[i].ID == dto.HotelID {
-			room.Hotel = hotels[i]
-		}
-	}
-
-	return room, nil
+	return createdRoom, nil
 }
 
 func (s *roomService) Update(ctx context.Context, id string, room models.Room) (models.Room, error) {

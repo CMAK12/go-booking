@@ -3,8 +3,6 @@ package models
 import (
 	"time"
 
-	"go-booking/internal/dto"
-
 	"github.com/google/uuid"
 )
 
@@ -25,12 +23,16 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func NewUser(dto dto.CreateUserRequest) User {
+func NewUser(
+	email string,
+	name string,
+	password string,
+) User {
 	return User{
 		ID:        uuid.NewString(),
-		Email:     dto.Email,
-		Name:      dto.Name,
-		Password:  dto.Password,
+		Email:     email,
+		Name:      name,
+		Password:  password,
 		CreatedAt: time.Now(),
 		Role:      RoleGuest,
 	}

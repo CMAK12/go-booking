@@ -17,7 +17,7 @@ type (
 	}
 
 	BookingService interface {
-		List(ctx context.Context, filter storage.ListBookingFilter) ([]models.Booking, error)
+		List(ctx context.Context, filter storage.ListBookingFilter) ([]dto.ListBookingResponse, error)
 		Create(ctx context.Context, dto dto.CreateBookingRequest) (models.Booking, error)
 		Update(ctx context.Context, id string, dto dto.UpdateBookingRequest) (models.Booking, error)
 		Delete(ctx context.Context, id string) error
@@ -31,7 +31,7 @@ type (
 	}
 
 	RoomService interface {
-		List(ctx context.Context, filter storage.ListRoomFilter) ([]models.Room, error)
+		List(ctx context.Context, filter storage.ListRoomFilter) ([]dto.ListRoomResponse, error)
 		Create(ctx context.Context, dto dto.CreateRoomRequest) (models.Room, error)
 		Update(ctx context.Context, id string, room models.Room) (models.Room, error)
 		Delete(ctx context.Context, id string) error

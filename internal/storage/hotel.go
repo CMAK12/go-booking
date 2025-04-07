@@ -38,36 +38,20 @@ func (s *hotelStorage) List(ctx context.Context, filter ListHotelFilter) ([]mode
 		Select("id", "name", "city", "address", "rating", "description").
 		From(hotelTable)
 
-	if filter.ID != "" {
-		qb = qb.Where(sq.Eq{"id": filter.ID})
-	}
-	if filter.Name != "" {
-		qb = qb.Where(sq.Like{"name": "%" + filter.Name + "%"})
-	}
-	if filter.City != "" {
-		qb = qb.Where(sq.Like{"city": "%" + filter.City + "%"})
-	}
-	if filter.Address != "" {
-		qb = qb.Where(sq.Like{"address": "%" + filter.Address + "%"})
-	}
-	if filter.Description != "" {
-		qb = qb.Where(sq.Like{"description": "%" + filter.Description + "%"})
-	}
-	if filter.Rating != 0 {
-		qb = qb.Where(sq.Eq{"rating": filter.Rating})
-	}
+	qb = buildSearchHotelQuery(qb, filter)
 
-	var hotel []models.Hotel
 	query, args, err := qb.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
+
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
 
+	var hotel []models.Hotel
 	for rows.Next() {
 		var h models.Hotel
 		err := rows.Scan(
@@ -144,4 +128,27 @@ func (s *hotelStorage) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("failed to execute query: %w", err)
 	}
 	return nil
+}
+
+func buildSearchHotelQuery(qb sq.SelectBuilder, filter ListHotelFilter) sq.SelectBuilder {
+	if filter.ID != "" {
+		qb = qb.Where(sq.Eq{"id": filter.ID})
+	}
+	if filter.Name != "" {
+		qb = qb.Where(sq.Like{"name": "%" + filter.Name + "%"})
+	}
+	if filter.City != "" {
+		qb = qb.Where(sq.Like{"city": "%" + filter.City + "%"})
+	}
+	if filter.Address != "" {
+		qb = qb.Where(sq.Like{"address": "%" + filter.Address + "%"})
+	}
+	if filter.Description != "" {
+		qb = qb.Where(sq.Like{"description": "%" + filter.Description + "%"})
+	}
+	if filter.Rating != 0 {
+		qb = qb.Where(sq.Eq{"rating": filter.Rating})
+	}
+
+	return qb
 }

@@ -37,18 +37,7 @@ func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceF
 		).
 		From(extraServiceTable)
 
-	if filter.ID != "" {
-		qb = qb.Where(sq.Eq{"id": filter.ID})
-	}
-	if filter.RoomID != "" {
-		qb = qb.Where(sq.Eq{"room_id": filter.RoomID})
-	}
-	if filter.Name != "" {
-		qb = qb.Where(sq.Like{"name": "%" + filter.Name + "%"})
-	}
-	if filter.Price != 0 {
-		qb = qb.Where(sq.Eq{"price": filter.Price})
-	}
+	qb = buildSearchExtraServiceQuery(qb, filter)
 
 	query, args, err := qb.ToSql()
 	if err != nil {
@@ -136,4 +125,21 @@ func (s *extraServiceStorage) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func buildSearchExtraServiceQuery(qb sq.SelectBuilder, filter ListExtraServiceFilter) sq.SelectBuilder {
+	if filter.ID != "" {
+		qb = qb.Where(sq.Eq{"id": filter.ID})
+	}
+	if filter.RoomID != "" {
+		qb = qb.Where(sq.Eq{"room_id": filter.RoomID})
+	}
+	if filter.Name != "" {
+		qb = qb.Where(sq.Like{"name": "%" + filter.Name + "%"})
+	}
+	if filter.Price != 0 {
+		qb = qb.Where(sq.Eq{"price": filter.Price})
+	}
+
+	return qb
 }

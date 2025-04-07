@@ -1,8 +1,6 @@
 package models
 
 import (
-	"go-booking/internal/dto"
-
 	"github.com/google/uuid"
 )
 
@@ -15,13 +13,19 @@ type Hotel struct {
 	Rating      float64 `json:"rating"`
 }
 
-func NewHotel(dto dto.CreateHotelRequest) Hotel {
+func NewHotel(
+	name string,
+	address string,
+	city string,
+	description string,
+	rating float64,
+) Hotel {
 	return Hotel{
 		ID:          uuid.NewString(),
-		Name:        dto.Name,
-		Address:     dto.Address,
-		City:        dto.City,
-		Description: dto.Description,
-		Rating:      float64(dto.Rating),
+		Name:        name,
+		Address:     address,
+		City:        city,
+		Description: description,
+		Rating:      rating,
 	}
 }
