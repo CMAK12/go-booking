@@ -3,8 +3,9 @@ package storage
 import (
 	"context"
 	"fmt"
-	"go-booking/internal/models"
 	"strconv"
+
+	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,14 +17,15 @@ type roomStorage struct {
 }
 
 type ListRoomFilter struct {
-	ID          string `json:"id"`
-	HotelID     string `json:"hotel_id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Price       int    `json:"price"`
-	Capacity    int    `json:"capacity"`
-	Quantity    int    `json:"quantity"`
-	Available   string `json:"available"`
+	ID          string   `json:"id"`
+	IDs         []string `json:"ids,omitempty"`
+	HotelID     string   `json:"hotel_id"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Price       int      `json:"price"`
+	Capacity    int      `json:"capacity"`
+	Quantity    int      `json:"quantity"`
+	Available   string   `json:"available"`
 }
 
 func NewRoomStorage(db *pgxpool.Pool) RoomStorage {
@@ -135,6 +137,9 @@ func (s *roomStorage) Delete(ctx context.Context, id string) error {
 }
 
 func buildSearchRoomFilter(qb sq.SelectBuilder, filter ListRoomFilter) (sq.SelectBuilder, error) {
+	if len(filter.IDs) > 0 {
+		qb = qb.Where(sq.Eq{"r.id": filter.IDs})
+	}
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"r.id": filter.ID})
 	}

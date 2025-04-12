@@ -18,6 +18,7 @@ type (
 
 	ListUserFilter struct {
 		ID       string          `json:"id"`
+		IDs      []string        `json:"ids,omitempty"`
 		Username string          `json:"username"`
 		Email    string          `json:"email"`
 		Role     models.UserRole `json:"role"`
@@ -123,6 +124,9 @@ func (s *userStorage) Delete(ctx context.Context, id string) error {
 }
 
 func buildSearchUserQuery(qb sq.SelectBuilder, filter ListUserFilter) sq.SelectBuilder {
+	if len(filter.IDs) > 0 {
+		qb = qb.Where(sq.Eq{"id": filter.IDs})
+	}
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"id": filter.ID})
 	}
