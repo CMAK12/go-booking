@@ -16,12 +16,13 @@ type hotelStorage struct {
 }
 
 type ListHotelFilter struct {
-	ID          string  `json:"id"`
-	Name        string  `json:"name"`
-	City        string  `json:"city"`
-	Address     string  `json:"address"`
-	Description string  `json:"description"`
-	Rating      float64 `json:"rating"`
+	ID          string   `json:"id"`
+	IDs         []string `json:"ids,omitempty"`
+	Name        string   `json:"name"`
+	City        string   `json:"city"`
+	Address     string   `json:"address"`
+	Description string   `json:"description"`
+	Rating      float64  `json:"rating"`
 }
 
 func NewHotelStorage(db *pgxpool.Pool) HotelStorage {
@@ -131,6 +132,9 @@ func (s *hotelStorage) Delete(ctx context.Context, id string) error {
 }
 
 func buildSearchHotelQuery(qb sq.SelectBuilder, filter ListHotelFilter) sq.SelectBuilder {
+	if len(filter.IDs) > 0 {
+		qb = qb.Where(sq.Eq{"id": filter.IDs})
+	}
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"id": filter.ID})
 	}

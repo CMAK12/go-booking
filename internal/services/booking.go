@@ -28,7 +28,6 @@ func NewBookingService(
 	extraServiceStorage storage.ExtraServiceStorage,
 	mailAuth mailer.Authentication,
 ) BookingService {
-
 	return &bookingService{
 		bookingStorage:      bookingStorage,
 		hotelStorage:        hotelStorage,
@@ -46,28 +45,83 @@ func (s *bookingService) List(ctx context.Context, filter storage.ListBookingFil
 		return nil, err
 	}
 
-	var bookingResponse []dto.ListBookingResponse
+	if len(bookings) == 0 {
+		return []dto.ListBookingResponse{}, nil
+	}
+
+	userIDs := make([]string, 0, len(bookings))
+	roomIDs := make([]string, 0, len(bookings))
+	userIDMap := make(map[string]bool)
+	roomIDMap := make(map[string]bool)
+
 	for _, booking := range bookings {
-		users, err := s.userStorage.List(ctx, storage.ListUserFilter{ID: booking.UserID})
-		if err != nil || len(users) == 0 {
-			log.Println("failed to list users:", err)
-			return nil, err
+		if !userIDMap[booking.UserID] {
+			userIDs = append(userIDs, booking.UserID)
+			userIDMap[booking.UserID] = true
 		}
-		user := users[0]
 
-		rooms, err := s.roomService.List(ctx, storage.ListRoomFilter{ID: booking.RoomID})
-		if err != nil || len(rooms) == 0 {
-			log.Println("failed to list rooms:", err)
-			return nil, err
+		if !roomIDMap[booking.RoomID] {
+			roomIDs = append(roomIDs, booking.RoomID)
+			roomIDMap[booking.RoomID] = true
 		}
-		room := rooms[0]
+	}
 
-		hotels, err := s.hotelStorage.List(ctx, storage.ListHotelFilter{ID: room.HotelID})
-		if err != nil || len(hotels) == 0 {
-			log.Println("failed to list hotels:", err)
-			return nil, err
+	users, err := s.userStorage.List(ctx, storage.ListUserFilter{IDs: userIDs})
+	if err != nil {
+		log.Println("failed to list users:", err)
+		return nil, err
+	}
+	userMap := make(map[string]models.User)
+	for _, user := range users {
+		userMap[user.ID] = user
+	}
+
+	rooms, err := s.roomService.List(ctx, storage.ListRoomFilter{IDs: roomIDs})
+	if err != nil {
+		log.Println("failed to list rooms:", err)
+		return nil, err
+	}
+	roomMap := make(map[string]dto.ListRoomResponse)
+
+	hotelIDs := make([]string, 0, len(rooms))
+	hotelIDMap := make(map[string]bool)
+	for _, room := range rooms {
+		if !hotelIDMap[room.HotelID] {
+			hotelIDs = append(hotelIDs, room.HotelID)
+			hotelIDMap[room.HotelID] = true
 		}
-		hotel := hotels[0]
+		roomMap[room.ID] = room
+	}
+
+	hotels, err := s.hotelStorage.List(ctx, storage.ListHotelFilter{IDs: hotelIDs})
+	if err != nil {
+		log.Println("failed to list hotels:", err)
+		return nil, err
+	}
+	hotelMap := make(map[string]models.Hotel)
+	for _, hotel := range hotels {
+		hotelMap[hotel.ID] = hotel
+	}
+
+	bookingResponse := make([]dto.ListBookingResponse, 0, len(bookings))
+	for _, booking := range bookings {
+		user, userExists := userMap[booking.UserID]
+		if !userExists {
+			log.Println("user not found for booking:", booking.ID)
+			continue
+		}
+
+		room, roomExists := roomMap[booking.RoomID]
+		if !roomExists {
+			log.Println("room not found for booking:", booking.ID)
+			continue
+		}
+
+		hotel, hotelExists := hotelMap[room.HotelID]
+		if !hotelExists {
+			log.Println("hotel not found for booking:", booking.ID)
+			continue
+		}
 
 		response := dto.ListBookingResponse{
 			ID:        booking.ID,
