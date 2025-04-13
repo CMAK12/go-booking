@@ -35,14 +35,7 @@ func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(hotels)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusOK, hotels)
 }
 
 func (h *Handler) createHotel(w http.ResponseWriter, r *http.Request) {
@@ -58,14 +51,7 @@ func (h *Handler) createHotel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(hotel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusCreated, hotel)
 }
 
 func (h *Handler) updateHotel(w http.ResponseWriter, r *http.Request) {
@@ -83,14 +69,7 @@ func (h *Handler) updateHotel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(hotel)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusOK, hotel)
 }
 
 func (h *Handler) deleteHotel(w http.ResponseWriter, r *http.Request) {

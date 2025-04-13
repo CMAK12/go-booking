@@ -1,7 +1,9 @@
 package v1
 
 import (
+	"encoding/json"
 	service "go-booking/internal/services"
+	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -67,4 +69,15 @@ func (h *Handler) SetupRoutes(r *chi.Mux) {
 			r.Delete("/{id}", h.deleteExtraService)
 		})
 	})
+}
+
+func writeJSON(w http.ResponseWriter, status int, data interface{}) {
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	w.Write(jsonData)
 }

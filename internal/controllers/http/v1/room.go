@@ -54,14 +54,7 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(rooms)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusOK, rooms)
 }
 
 func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {
@@ -78,14 +71,7 @@ func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(room)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusCreated, room)
 }
 
 func (h *Handler) updateRoom(w http.ResponseWriter, r *http.Request) {
@@ -104,14 +90,7 @@ func (h *Handler) updateRoom(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(room)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusOK, room)
 }
 
 func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) {
@@ -124,4 +103,5 @@ func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+	w.Write([]byte("Room deleted successfully"))
 }

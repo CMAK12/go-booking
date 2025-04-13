@@ -34,14 +34,7 @@ func (h *Handler) listExtraService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(rooms)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusOK, rooms)
 }
 
 func (h *Handler) createExtraService(w http.ResponseWriter, r *http.Request) {
@@ -57,14 +50,7 @@ func (h *Handler) createExtraService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(extraService)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusCreated, extraService)
 }
 
 func (h *Handler) updateExtraService(w http.ResponseWriter, r *http.Request) {
@@ -82,14 +68,7 @@ func (h *Handler) updateExtraService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(updatedExtraService)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusOK, updatedExtraService)
 }
 
 func (h *Handler) deleteExtraService(w http.ResponseWriter, r *http.Request) {
@@ -99,6 +78,7 @@ func (h *Handler) deleteExtraService(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	w.WriteHeader(http.StatusNoContent)
 	w.Write([]byte("Extra service deleted successfully"))
 }

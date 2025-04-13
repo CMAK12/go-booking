@@ -26,14 +26,7 @@ func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(bookings)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusOK, bookings)
 }
 
 func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request) {
@@ -49,14 +42,7 @@ func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(booking)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusCreated, booking)
 }
 
 func (h *Handler) updateBooking(w http.ResponseWriter, r *http.Request) {
@@ -74,14 +60,7 @@ func (h *Handler) updateBooking(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jsonData, err := json.Marshal(updatedBooking)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	writeJSON(w, http.StatusOK, updatedBooking)
 }
 
 func (h *Handler) deleteBooking(w http.ResponseWriter, r *http.Request) {
@@ -93,4 +72,5 @@ func (h *Handler) deleteBooking(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+	w.Write([]byte("Booking deleted successfully"))
 }
