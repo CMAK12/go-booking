@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"go-booking/internal/dto"
@@ -146,6 +147,19 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		dto.StartDate,
 		dto.EndDate,
 	)
+
+	foundedBookings, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
+		RoomID:    dto.RoomID,
+		StartDate: dto.StartDate,
+		EndDate:   dto.EndDate,
+	})
+	if err != nil {
+		log.Println("failed to list bookings for room:", err)
+		return models.Booking{}, err
+	} else if len(foundedBookings) > 0 {
+		log.Println("room is already booked for the selected dates")
+		return models.Booking{}, fmt.Errorf("room is already booked for the selected dates")
+	}
 
 	newBooking, err := s.bookingStorage.Create(ctx, booking)
 	if err != nil {

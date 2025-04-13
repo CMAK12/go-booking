@@ -31,8 +31,9 @@ func NewBooking(
 	startDateStr string,
 	endDateStr string,
 ) Booking {
-	startDate, _ := time.Parse(time.RFC3339, startDateStr)
-	endDate, _ := time.Parse(time.RFC3339, endDateStr)
+	layout := "2006-01-02"
+	startDate, _ := time.Parse(layout, startDateStr)
+	endDate, _ := time.Parse(layout, endDateStr)
 
 	return Booking{
 		ID:        uuid.NewString(),

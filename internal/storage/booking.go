@@ -139,6 +139,12 @@ func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) sq.S
 	if filter.UserID != "" {
 		qb = qb.Where(sq.Eq{"bt.user_id": filter.UserID})
 	}
+	if filter.StartDate != "" || filter.EndDate != "" {
+		qb = qb.Where(sq.Or{
+			sq.Lt{"bt.start_date": filter.EndDate},
+			sq.Gt{"bt.end_date": filter.StartDate},
+		})
+	}
 	if filter.StartDate != "" {
 		qb = qb.Where(sq.GtOrEq{"bt.start_date": filter.StartDate})
 	}

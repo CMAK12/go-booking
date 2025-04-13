@@ -2,11 +2,12 @@ package v1
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
-	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )

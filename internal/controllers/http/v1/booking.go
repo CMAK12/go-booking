@@ -2,10 +2,11 @@ package v1
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
-	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
