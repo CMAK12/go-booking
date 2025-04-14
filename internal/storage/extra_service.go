@@ -30,10 +30,12 @@ func NewExtraServiceStorage(db *pgxpool.Pool) ExtraServiceStorage {
 	}
 }
 
-func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceFilter) ([]models.ExtraService, error) {
+func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceFilter) ([]models.ExtraService, int64, error) {
 	qb := s.builder.
 		Select(
 			"id", "room_id", "name", "price",
+
+			"COUNT(*) OVER() AS total_count",
 		).
 		From(extraServiceTable)
 
@@ -41,28 +43,32 @@ func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceF
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build query: %w", err)
+		return nil, 0, fmt.Errorf("failed to build query: %w", err)
 	}
 
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %w", err)
+		return nil, 0, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
 
 	var extraServices []models.ExtraService
+	var totalCount int64
 	for rows.Next() {
 		var extraService models.ExtraService
-		err = rows.Scan(
+		var count int64
+		if err = rows.Scan(
 			&extraService.ID, &extraService.RoomID, &extraService.Name, &extraService.Price,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
+			&count,
+		); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
 		}
+
+		totalCount = count
 		extraServices = append(extraServices, extraService)
 	}
 
-	return extraServices, nil
+	return extraServices, totalCount, nil
 }
 
 func (s *extraServiceStorage) Create(ctx context.Context, extraService models.ExtraService) (models.ExtraService, error) {

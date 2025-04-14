@@ -2,10 +2,11 @@ package v1
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
-	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -20,13 +21,13 @@ func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) {
 		Status:    models.BookingStatus(r.URL.Query().Get("status")),
 	}
 
-	bookings, err := h.bookingService.List(r.Context(), filter)
+	bookings, count, err := h.bookingService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, bookings)
+	writeJSON(w, http.StatusOK, bookings, count)
 }
 
 func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request) {

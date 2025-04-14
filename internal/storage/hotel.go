@@ -34,37 +34,43 @@ func NewHotelStorage(db *pgxpool.Pool) HotelStorage {
 	}
 }
 
-func (s *hotelStorage) List(ctx context.Context, filter ListHotelFilter) ([]models.Hotel, error) {
+func (s *hotelStorage) List(ctx context.Context, filter ListHotelFilter) ([]models.Hotel, int64, error) {
 	qb := s.builder.
-		Select("id", "name", "city", "address", "rating", "description").
+		Select(
+			"id", "name", "city", "address", "rating", "description",
+
+			"COUNT(*) OVER() AS total_count",
+		).
 		From(hotelTable)
 
 	qb = buildSearchHotelQuery(qb, filter)
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build query: %w", err)
+		return nil, 0, fmt.Errorf("failed to build query: %w", err)
 	}
 
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %w", err)
+		return nil, 0, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
 
 	var hotel []models.Hotel
+	var totalCount int64
 	for rows.Next() {
 		var h models.Hotel
-		err := rows.Scan(
-			&h.ID, &h.Name, &h.City, &h.Address,
-			&h.Rating, &h.Description,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan hotel: %w", err)
+		var count int64
+		if err := rows.Scan(
+			&h.ID, &h.Name, &h.City, &h.Address, &h.Rating, &h.Description,
+			&count,
+		); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan hotel: %w", err)
 		}
+		totalCount = count
 		hotel = append(hotel, h)
 	}
-	return hotel, nil
+	return hotel, totalCount, nil
 }
 
 func (s *hotelStorage) Create(ctx context.Context, hotel models.Hotel) (models.Hotel, error) {

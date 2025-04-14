@@ -33,38 +33,47 @@ func NewBookingStorage(db *pgxpool.Pool) BookingStorage {
 	}
 }
 
-func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]models.Booking, error) {
+func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]models.Booking, int64, error) {
 	qb := s.builder.
 		Select(
 			"bt.id", "bt.user_id", "bt.room_id", "bt.start_date", "bt.end_date", "bt.status",
+
+			"COUNT(*) OVER() AS total_count",
 		).
 		From(fmt.Sprintf("%s AS bt", bookingTable))
 
-	qb = buildSearchBookingQuery(qb, filter)
+	qb, err := buildSearchBookingQuery(qb, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to build search query: %w", err)
+	}
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build query: %w", err)
+		return nil, 0, fmt.Errorf("failed to build query: %w", err)
 	}
 
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %w", err)
+		return nil, 0, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
 
 	var bookings []models.Booking
+	var totalCount int64
 	for rows.Next() {
 		var booking models.Booking
-		err := rows.Scan(
+		var count int64
+		if err := rows.Scan(
 			&booking.ID, &booking.UserID, &booking.RoomID, &booking.StartDate, &booking.EndDate, &booking.Status,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan booking: %w", err)
+			&count,
+		); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan booking: %w", err)
 		}
+		totalCount = count
 		bookings = append(bookings, booking)
 	}
-	return bookings, nil
+
+	return bookings, totalCount, nil
 }
 
 func (s *bookingStorage) Create(ctx context.Context, booking models.Booking) (models.Booking, error) {
@@ -129,7 +138,7 @@ func (s *bookingStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) sq.SelectBuilder {
+func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) (sq.SelectBuilder, error) {
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"bt.id": filter.ID})
 	}
@@ -139,15 +148,18 @@ func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) sq.S
 	if filter.UserID != "" {
 		qb = qb.Where(sq.Eq{"bt.user_id": filter.UserID})
 	}
-	if filter.StartDate != "" {
-		qb = qb.Where(sq.GtOrEq{"bt.start_date": filter.StartDate})
-	}
-	if filter.EndDate != "" {
-		qb = qb.Where(sq.LtOrEq{"bt.end_date": filter.EndDate})
+	if filter.StartDate != "" || filter.EndDate != "" {
+		if filter.StartDate >= filter.EndDate {
+			return qb, fmt.Errorf("start date is bigger than end date")
+		}
+		qb = qb.Where(sq.And{
+			sq.Lt{"bt.start_date": filter.EndDate},
+			sq.Gt{"bt.end_date": filter.StartDate},
+		})
 	}
 	if filter.Status != "" {
 		qb = qb.Where(sq.Eq{"bt.status": filter.Status})
 	}
 
-	return qb
+	return qb, nil
 }

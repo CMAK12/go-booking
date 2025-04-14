@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,6 +13,8 @@ const (
 	BookingStatusPending   BookingStatus = "pending"
 	BookingStatusConfirmed BookingStatus = "confirmed"
 	BookingStatusCancelled BookingStatus = "cancelled"
+
+	timeLayout = "2006-01-02"
 )
 
 type Booking struct {
@@ -30,9 +33,18 @@ func NewBooking(
 	hotelID string,
 	startDateStr string,
 	endDateStr string,
-) Booking {
-	startDate, _ := time.Parse(time.RFC3339, startDateStr)
-	endDate, _ := time.Parse(time.RFC3339, endDateStr)
+) (Booking, error) {
+	startDate, err := time.Parse(timeLayout, startDateStr)
+	if err != nil {
+		return Booking{}, fmt.Errorf("error parsing start date: %w", err)
+	}
+	startDate = time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 10, 0, 0, 0, startDate.Location())
+
+	endDate, err := time.Parse(timeLayout, endDateStr)
+	if err != nil {
+		return Booking{}, fmt.Errorf("error parsing end date: %w", err)
+	}
+	endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 10, 0, 0, 0, endDate.Location())
 
 	return Booking{
 		ID:        uuid.NewString(),
@@ -42,7 +54,7 @@ func NewBooking(
 		StartDate: startDate,
 		EndDate:   endDate,
 		Status:    BookingStatusPending,
-	}
+	}, nil
 }
 
 func NewBookingFromDTO(
@@ -52,9 +64,18 @@ func NewBookingFromDTO(
 	startDateStr string,
 	endDateStr string,
 	status string,
-) Booking {
-	startDate, _ := time.Parse(time.RFC3339, startDateStr)
-	endDate, _ := time.Parse(time.RFC3339, endDateStr)
+) (Booking, error) {
+	startDate, err := time.Parse(timeLayout, startDateStr)
+	if err != nil {
+		return Booking{}, fmt.Errorf("error parsing start date: %w", err)
+	}
+	startDate = time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 10, 0, 0, 0, startDate.Location())
+
+	endDate, err := time.Parse(timeLayout, endDateStr)
+	if err != nil {
+		return Booking{}, fmt.Errorf("error parsing end date: %w", err)
+	}
+	endDate = time.Date(endDate.Year(), endDate.Month(), endDate.Day(), 10, 0, 0, 0, endDate.Location())
 
 	return Booking{
 		ID:        id,
@@ -63,5 +84,5 @@ func NewBookingFromDTO(
 		StartDate: startDate,
 		EndDate:   endDate,
 		Status:    BookingStatus(status),
-	}
+	}, nil
 }

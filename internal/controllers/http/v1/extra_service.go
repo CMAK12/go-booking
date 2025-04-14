@@ -28,13 +28,13 @@ func (h *Handler) listExtraService(w http.ResponseWriter, r *http.Request) {
 		filter.Price = parsedPrice
 	}
 
-	rooms, err := h.extraService.List(r.Context(), filter)
+	rooms, count, err := h.extraService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, rooms)
+	writeJSON(w, http.StatusOK, rooms, count)
 }
 
 func (h *Handler) createExtraService(w http.ResponseWriter, r *http.Request) {

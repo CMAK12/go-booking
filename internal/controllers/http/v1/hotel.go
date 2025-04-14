@@ -2,11 +2,12 @@ package v1
 
 import (
 	"encoding/json"
+	"net/http"
+	"strconv"
+
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
-	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -29,13 +30,13 @@ func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) {
 		filter.Rating = ratingFloat
 	}
 
-	hotels, err := h.hotelService.List(r.Context(), filter)
+	hotels, count, err := h.hotelService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, hotels)
+	writeJSON(w, http.StatusOK, hotels, count)
 }
 
 func (h *Handler) createHotel(w http.ResponseWriter, r *http.Request) {

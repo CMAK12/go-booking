@@ -2,8 +2,9 @@ package v1
 
 import (
 	"encoding/json"
-	service "go-booking/internal/services"
 	"net/http"
+
+	service "go-booking/internal/services"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -71,8 +72,16 @@ func (h *Handler) SetupRoutes(r *chi.Mux) {
 	})
 }
 
-func writeJSON(w http.ResponseWriter, status int, data interface{}) {
-	jsonData, err := json.Marshal(data)
+func writeJSON(w http.ResponseWriter, status int, data interface{}, count ...int64) {
+	response := map[string]interface{}{
+		"data": data,
+	}
+
+	if len(count) > 0 {
+		response["count"] = count[0]
+	}
+
+	jsonData, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
