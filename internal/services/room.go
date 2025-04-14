@@ -24,19 +24,19 @@ func NewRoomService(
 	}
 }
 
-func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) ([]dto.ListRoomResponse, error) {
-	rooms, err := s.roomStorage.List(ctx, filter)
+func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) ([]dto.ListRoomResponse, int64, error) {
+	rooms, rsCount, err := s.roomStorage.List(ctx, filter)
 	if err != nil {
 		log.Println("Error listing rooms:", err)
-		return nil, err
+		return nil, 0, err
 	}
 
 	var responseRoom []dto.ListRoomResponse
 	for _, room := range rooms {
-		ess, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomID: room.ID})
+		ess, _, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomID: room.ID})
 		if err != nil {
 			log.Println("Error listing extra services:", err)
-			return nil, err
+			return nil, 0, err
 		}
 
 		responseRoom = append(responseRoom, dto.ListRoomResponse{
@@ -50,7 +50,7 @@ func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) (
 		})
 	}
 
-	return responseRoom, nil
+	return responseRoom, rsCount, nil
 }
 
 func (s *roomService) Create(ctx context.Context, dto dto.CreateRoomRequest) (models.Room, error) {

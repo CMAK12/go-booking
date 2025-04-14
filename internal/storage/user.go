@@ -34,33 +34,43 @@ func NewUserStorage(db *pgxpool.Pool) UserStorage {
 	}
 }
 
-func (s *userStorage) List(ctx context.Context, filter ListUserFilter) ([]models.User, error) {
+func (s *userStorage) List(ctx context.Context, filter ListUserFilter) ([]models.User, int64, error) {
 	qb := s.builder.
-		Select("id", "name", "email", "role", "created_at").
+		Select(
+			"id", "name", "email", "role", "created_at",
+
+			"COUNT(*) OVER() AS total_count",
+		).
 		From(userTable)
 
 	qb = buildSearchUserQuery(qb, filter)
 
 	query, args, err := qb.ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build query: %w", err)
+		return nil, 0, fmt.Errorf("failed to build query: %w", err)
 	}
 
 	rows, err := s.db.Query(ctx, query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %w", err)
+		return nil, 0, fmt.Errorf("failed to execute query: %w", err)
 	}
 	defer rows.Close()
 
 	var users []models.User
+	var totalCount int64
 	for rows.Next() {
 		var user models.User
-		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Role, &user.CreatedAt); err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
+		var count int64
+		if err := rows.Scan(
+			&user.ID, &user.Name, &user.Email, &user.Role, &user.CreatedAt,
+			&count,
+		); err != nil {
+			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
 		}
+		totalCount = count
 		users = append(users, user)
 	}
-	return users, nil
+	return users, totalCount, nil
 }
 
 func (s *userStorage) Create(ctx context.Context, user models.User) (models.User, error) {

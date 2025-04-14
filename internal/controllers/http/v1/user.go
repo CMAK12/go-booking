@@ -19,13 +19,13 @@ func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
 		Role:     models.UserRole(r.URL.Query().Get("role")),
 	}
 
-	users, err := h.userService.List(r.Context(), filter)
+	users, count, err := h.userService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, users)
+	writeJSON(w, http.StatusOK, users, count)
 }
 
 func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {

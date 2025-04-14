@@ -17,14 +17,14 @@ func NewHotelService(hotelStorage storage.HotelStorage) HotelService {
 	return &hotelService{hotelStorage: hotelStorage}
 }
 
-func (s *hotelService) List(ctx context.Context, filter storage.ListHotelFilter) ([]models.Hotel, error) {
-	hotels, err := s.hotelStorage.List(ctx, filter)
+func (s *hotelService) List(ctx context.Context, filter storage.ListHotelFilter) ([]models.Hotel, int64, error) {
+	hotels, count, err := s.hotelStorage.List(ctx, filter)
 	if err != nil {
 		log.Println("failed to list hotels:", err)
-		return nil, err
+		return nil, 0, err
 	}
 
-	return hotels, nil
+	return hotels, count, nil
 }
 
 func (s *hotelService) Create(ctx context.Context, dto dto.CreateHotelRequest) (models.Hotel, error) {

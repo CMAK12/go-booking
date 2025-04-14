@@ -48,13 +48,13 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 		filter.Quantity = q
 	}
 
-	rooms, err := h.roomService.List(r.Context(), filter)
+	rooms, count, err := h.roomService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, rooms)
+	writeJSON(w, http.StatusOK, rooms, count)
 }
 
 func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {

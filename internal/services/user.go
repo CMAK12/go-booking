@@ -16,13 +16,13 @@ func NewUserService(userStorage storage.UserStorage) UserService {
 	return &userService{userStorage: userStorage}
 }
 
-func (s *userService) List(ctx context.Context, filter storage.ListUserFilter) ([]models.User, error) {
-	users, err := s.userStorage.List(ctx, filter)
+func (s *userService) List(ctx context.Context, filter storage.ListUserFilter) ([]models.User, int64, error) {
+	users, count, err := s.userStorage.List(ctx, filter)
 	if err != nil {
 		log.Println("error listing users", err)
-		return nil, err
+		return nil, 0, err
 	}
-	return users, nil
+	return users, count, nil
 }
 
 func (s *userService) Create(ctx context.Context, dto dto.CreateUserRequest) (models.User, error) {
