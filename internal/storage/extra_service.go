@@ -96,6 +96,7 @@ func (s *extraServiceStorage) Update(ctx context.Context, id string, extraServic
 
 	query, args, err := s.builder.
 		Update(extraServiceTable).
+		Set("room_id", extraService.RoomID).
 		Set("name", extraService.Name).
 		Set("price", extraService.Price).
 		Where(sq.Eq{"id": id}).
@@ -103,6 +104,8 @@ func (s *extraServiceStorage) Update(ctx context.Context, id string, extraServic
 	if err != nil {
 		return models.ExtraService{}, fmt.Errorf("failed to build query: %w", err)
 	}
+
+	extraService.ID = id
 
 	_, err = s.db.Exec(ctx, query, args...)
 	if err != nil {

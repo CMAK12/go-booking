@@ -33,7 +33,20 @@ func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) (
 
 	var responseRoom []dto.ListRoomResponse
 	for _, room := range rooms {
-		ess, _, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomID: room.ID})
+		extraServices, _, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomID: room.ID})
+		if err != nil {
+			log.Println("Error listing extra services:", err)
+			return nil, 0, err
+		}
+
+		var ess []dto.ListExtraServiceResponse
+		for _, es := range extraServices {
+			ess = append(ess, dto.ListExtraServiceResponse{
+				ID:    es.ID,
+				Name:  es.Name,
+				Price: es.Price,
+			})
+		}
 		if err != nil {
 			log.Println("Error listing extra services:", err)
 			return nil, 0, err

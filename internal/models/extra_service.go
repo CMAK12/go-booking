@@ -6,7 +6,7 @@ import (
 
 type ExtraService struct {
 	ID     string `json:"id"`
-	RoomID string `json:"-"`
+	RoomID string `json:"room_id"`
 	Name   string `json:"name"`
 	Price  int    `json:"price"`
 }
