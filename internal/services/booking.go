@@ -50,8 +50,8 @@ func (s *bookingService) List(ctx context.Context, filter storage.ListBookingFil
 		return []dto.ListBookingResponse{}, 0, nil
 	}
 
-	userIDs := make([]string, 0, len(bookings))
-	roomIDs := make([]string, 0, len(bookings))
+	userIDs := make([]string, 0, count)
+	roomIDs := make([]string, 0, count)
 	userIDMap := make(map[string]bool)
 	roomIDMap := make(map[string]bool)
 
@@ -77,14 +77,14 @@ func (s *bookingService) List(ctx context.Context, filter storage.ListBookingFil
 		userMap[user.ID] = user
 	}
 
-	rooms, _, err := s.roomService.List(ctx, storage.ListRoomFilter{IDs: roomIDs})
+	rooms, rsCount, err := s.roomService.List(ctx, storage.ListRoomFilter{IDs: roomIDs})
 	if err != nil {
 		log.Println("failed to list rooms:", err)
 		return nil, 0, err
 	}
 	roomMap := make(map[string]dto.ListRoomResponse)
 
-	hotelIDs := make([]string, 0, len(rooms))
+	hotelIDs := make([]string, 0, rsCount)
 	hotelIDMap := make(map[string]bool)
 	for _, room := range rooms {
 		if !hotelIDMap[room.HotelID] {
@@ -104,7 +104,7 @@ func (s *bookingService) List(ctx context.Context, filter storage.ListBookingFil
 		hotelMap[hotel.ID] = hotel
 	}
 
-	bookingResponse := make([]dto.ListBookingResponse, 0, len(bookings))
+	bookingResponse := make([]dto.ListBookingResponse, 0, count)
 	for _, booking := range bookings {
 		user, userExists := userMap[booking.UserID]
 		if !userExists {
@@ -152,7 +152,7 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		return models.Booking{}, err
 	}
 
-	foundedBookings, _, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
+	_, bsCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
 		RoomID:    dto.RoomID,
 		StartDate: dto.StartDate,
 		EndDate:   dto.EndDate,
@@ -160,7 +160,7 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 	if err != nil {
 		log.Println("failed to list bookings for room:", err)
 		return models.Booking{}, err
-	} else if len(foundedBookings) > 0 {
+	} else if bsCount > 0 {
 		log.Printf("room %s is already booked for the selected dates", booking.RoomID)
 		return models.Booking{}, fmt.Errorf("room %s is already booked for the selected dates", booking.RoomID)
 	}
