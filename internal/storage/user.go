@@ -99,16 +99,18 @@ func (s *userStorage) Update(ctx context.Context, id string, user models.User) (
 		Update(userTable).
 		Set("name", user.Name).
 		Set("email", user.Email).
+		Set("password", user.Password).
 		Set("role", user.Role).
 		Where(sq.Eq{"id": id}).
+		Suffix("RETURNING id, created_at").
 		ToSql()
 	if err != nil {
 		return models.User{}, fmt.Errorf("failed to build query: %w", err)
 	}
 
-	_, err = s.db.Exec(ctx, query, args...)
+	err = s.db.QueryRow(ctx, query, args...).Scan(&user.ID, &user.CreatedAt)
 	if err != nil {
-		return models.User{}, fmt.Errorf("failed to execute query: %w", err)
+		return models.User{}, fmt.Errorf("failed to scan row: %w", err)
 	}
 	return user, nil
 }

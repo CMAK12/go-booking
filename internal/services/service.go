@@ -12,7 +12,7 @@ type (
 	UserService interface {
 		List(ctx context.Context, filter storage.ListUserFilter) ([]models.User, int64, error)
 		Create(ctx context.Context, dto dto.CreateUserRequest) (models.User, error)
-		Update(ctx context.Context, id string, user models.User) (models.User, error)
+		Update(ctx context.Context, id string, dto dto.UpdateUserRequest) (models.User, error)
 		Delete(ctx context.Context, id string) error
 	}
 

@@ -37,7 +37,9 @@ func (s *userService) Create(ctx context.Context, dto dto.CreateUserRequest) (mo
 	return createdUser, nil
 }
 
-func (s *userService) Update(ctx context.Context, id string, user models.User) (models.User, error) {
+func (s *userService) Update(ctx context.Context, id string, dto dto.UpdateUserRequest) (models.User, error) {
+	user := models.NewUpdateUser(id, dto.Name, dto.Email, dto.Password, dto.Role)
+
 	updatedUser, err := s.userStorage.Update(ctx, id, user)
 	if err != nil {
 		log.Println("error updating user", err)

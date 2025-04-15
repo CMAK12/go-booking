@@ -23,11 +23,7 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func NewUser(
-	email string,
-	name string,
-	password string,
-) User {
+func NewUser(email string, name string, password string) User {
 	return User{
 		ID:        uuid.NewString(),
 		Email:     email,
@@ -35,5 +31,15 @@ func NewUser(
 		Password:  password,
 		CreatedAt: time.Now(),
 		Role:      RoleGuest,
+	}
+}
+
+func NewUpdateUser(id, name, email, password, role string) User {
+	return User{
+		ID:       id,
+		Name:     name,
+		Email:    email,
+		Password: password,
+		Role:     UserRole(role),
 	}
 }

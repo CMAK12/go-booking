@@ -12,3 +12,10 @@ type UserResponse struct {
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
 }
+
+type UpdateUserRequest struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+	Role     string `json:"role"`
+}
