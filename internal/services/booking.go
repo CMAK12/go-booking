@@ -149,70 +149,84 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		dto.EndDate,
 	)
 	if err != nil {
-		log.Println("failed to create booking:", err)
+		log.Printf("failed to create booking: %v", err)
 		return models.Booking{}, err
 	}
 
 	// Check room availability
-	_, bsCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
+	_, overlapCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
 		RoomID:    dto.RoomID,
 		StartDate: dto.StartDate,
 		EndDate:   dto.EndDate,
 	})
 	if err != nil {
-		log.Println("failed to list bookings for room:", err)
+		log.Printf("failed to check room availability: %v", err)
 		return models.Booking{}, err
-	} else if bsCount > 0 {
-		bookings, bookingCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
+	}
+
+	if overlapCount > 0 {
+		bookings, count, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
 			RoomID:     dto.RoomID,
 			LatestDate: dto.EndDate,
 			Status:     []models.BookingStatus{models.BookingStatusPending, models.BookingStatusConfirmed},
 		})
-		if err == nil && bookingCount > 0 {
-			nearestFreeDate := fmt.Sprintf("%s - %s", booking.EndDate.Format("2006-01-02"), bookings[0].StartDate.AddDate(0, 0, -1).Format("2006-01-02"))
-			log.Printf("Room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
-			return models.Booking{}, fmt.Errorf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
-		} else if bookingCount <= 0 {
-			daysBetween := booking.EndDate.Sub(booking.StartDate).Hours() / 24
-			nearestEndDate := booking.StartDate.AddDate(0, 0, int(daysBetween)).Format("2006-01-02")
-			nearestFreeDate := fmt.Sprintf("%s - %s", booking.StartDate.Format("2006-01-02"), nearestEndDate)
-			log.Printf("Room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
-			return models.Booking{}, fmt.Errorf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
+		if err != nil {
+			log.Printf("failed to retrieve conflicting bookings: %v", err)
+			return models.Booking{}, err
 		}
 
-		log.Println("failed to list bookings for room:", err)
-		return models.Booking{}, err
+		var nearestFreeDate string
+		if count > 0 {
+			latestEndDate := bookings[0].EndDate
+			for _, b := range bookings[1:] {
+				if b.EndDate.After(latestEndDate) {
+					latestEndDate = b.EndDate
+				}
+			}
+
+			days := int(booking.EndDate.Sub(booking.StartDate).Hours() / 24)
+			nextAvailableStart := latestEndDate.AddDate(0, 0, 1)
+			nextAvailableEnd := nextAvailableStart.AddDate(0, 0, days)
+
+			nearestFreeDate = fmt.Sprintf("%s - %s",
+				nextAvailableStart.Format("2006-01-02"),
+				nextAvailableEnd.Format("2006-01-02"))
+		} else {
+			days := int(booking.EndDate.Sub(booking.StartDate).Hours() / 24)
+			nearestEnd := booking.StartDate.AddDate(0, 0, days)
+			nearestFreeDate = fmt.Sprintf("%s - %s",
+				booking.StartDate.Format("2006-01-02"),
+				nearestEnd.Format("2006-01-02"))
+		}
+
+		msg := fmt.Sprintf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
+		log.Println(msg)
+		return models.Booking{}, fmt.Errorf("%s", msg)
 	}
 
 	newBooking, err := s.bookingStorage.Create(ctx, booking)
 	if err != nil {
-		log.Println("failed to create booking:", err)
+		log.Printf("failed to store booking: %v", err)
 		return models.Booking{}, err
 	}
 
-	users, _, err := s.userStorage.List(ctx, storage.ListUserFilter{ID: booking.UserID})
-	if err != nil {
-		log.Println("failed to list user for email:", err)
-		return models.Booking{}, err
+	users, usCount, err := s.userStorage.List(ctx, storage.ListUserFilter{ID: booking.UserID})
+	if err != nil || usCount == 0 {
+		log.Printf("failed to fetch user for booking email: %v", err)
+		return newBooking, nil
 	}
 
-	go func() {
-		user := users[0]
-
+	go func(userEmail string) {
 		sender := mailer.NewPlainAuth(&s.mailAuth)
-		message := mailer.NewMessage(
-			consts.BookingVerificationSubject,
-			consts.BookingVerificationBody,
-		)
-		message.SetTo([]string{user.Email})
+		msg := mailer.NewMessage(consts.BookingVerificationSubject, consts.BookingVerificationBody)
+		msg.SetTo([]string{userEmail})
 
-		if err := sender.SendMail(message); err != nil {
-			log.Printf("failed to send email to %s: %v", user.Email, err)
+		if err := sender.SendMail(msg); err != nil {
+			log.Printf("failed to send email to %s: %v", userEmail, err)
 			return
 		}
-
-		log.Println("email sent successfully to:", user.Email)
-	}()
+		log.Printf("email sent successfully to: %s", userEmail)
+	}(users[0].Email)
 
 	return newBooking, nil
 }
