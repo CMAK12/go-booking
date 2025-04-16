@@ -47,10 +47,6 @@ func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) (
 				Price: es.Price,
 			})
 		}
-		if err != nil {
-			log.Println("Error listing extra services:", err)
-			return nil, 0, err
-		}
 
 		responseRoom = append(responseRoom, dto.ListRoomResponse{
 			ID:            room.ID,

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	"go-booking/internal/consts"
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
@@ -152,6 +153,7 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		return models.Booking{}, err
 	}
 
+	// Check room availability
 	_, bsCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
 		RoomID:    dto.RoomID,
 		StartDate: dto.StartDate,
@@ -171,40 +173,29 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		return models.Booking{}, err
 	}
 
-	// go func() {
-	// 	sender := mailer.NewPlainAuth(&s.mailAuth)
-	// 	message := mailer.NewMessage(
-	// 		consts.BookingVerificationSubject,
-	// 		consts.BookingVerificationBody,
-	// 	)
-	// 	message.SetTo([]string{booking.User.Email})
-
-	// 	if err := sender.SendMail(message); err != nil {
-	// 		log.Printf("failed to send email to %s: %v", booking.User.Email, err)
-	// 		return
-	// 	}
-
-	// 	log.Println("email sent successfully to:", booking.User.Email)
-	// }()
-
-	bookings, _, err := s.List(ctx, storage.ListBookingFilter{ID: booking.ID})
+	users, _, err := s.userStorage.List(ctx, storage.ListUserFilter{ID: booking.UserID})
 	if err != nil {
-		log.Println("failed to list bookings after creation:", err)
+		log.Println("failed to list user for email:", err)
 		return models.Booking{}, err
 	}
 
-	for _, b := range bookings {
-		if b.ID == booking.ID {
-			bookings[0] = b
-			break
-		}
-	}
+	go func() {
+		user := users[0]
 
-	// hotels, err := s.hotelStorage.List(ctx, storage.ListHotelFilter{ID: booking.Room.Hotel.ID})
-	// if err != nil {
-	// 	log.Println("failed to list hotels after booking creation:", err)
-	// 	return models.Booking{}, err
-	// }
+		sender := mailer.NewPlainAuth(&s.mailAuth)
+		message := mailer.NewMessage(
+			consts.BookingVerificationSubject,
+			consts.BookingVerificationBody,
+		)
+		message.SetTo([]string{user.Email})
+
+		if err := sender.SendMail(message); err != nil {
+			log.Printf("failed to send email to %s: %v", user.Email, err)
+			return
+		}
+
+		log.Println("email sent successfully to:", user.Email)
+	}()
 
 	return newBooking, nil
 }
