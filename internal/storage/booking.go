@@ -16,12 +16,13 @@ type bookingStorage struct {
 }
 
 type ListBookingFilter struct {
-	ID        string               `json:"id"`
-	RoomID    string               `json:"room_id"`
-	UserID    string               `json:"user_id"`
-	StartDate string               `json:"start_date"`
-	EndDate   string               `json:"end_date"`
-	Status    models.BookingStatus `json:"status"`
+	ID         string                 `json:"id"`
+	RoomID     string                 `json:"room_id"`
+	UserID     string                 `json:"user_id"`
+	StartDate  string                 `json:"start_date"`
+	EndDate    string                 `json:"end_date"`
+	LatestDate string                 `json:"-"`
+	Status     []models.BookingStatus `json:"status"`
 }
 
 func NewBookingStorage(db *pgxpool.Pool) BookingStorage {
@@ -157,7 +158,12 @@ func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) (sq.
 			sq.Gt{"bt.end_date": filter.StartDate},
 		})
 	}
-	if filter.Status != "" {
+	if filter.LatestDate != "" {
+		qb = qb.Where(sq.And{
+			sq.GtOrEq{"bt.start_date": filter.LatestDate},
+		})
+	}
+	if filter.Status != nil {
 		qb = qb.Where(sq.Eq{"bt.status": filter.Status})
 	}
 

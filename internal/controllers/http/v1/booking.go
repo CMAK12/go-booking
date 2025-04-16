@@ -18,7 +18,7 @@ func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) {
 		RoomID:    r.URL.Query().Get("room_id"),
 		StartDate: r.URL.Query().Get("start_date"),
 		EndDate:   r.URL.Query().Get("end_date"),
-		Status:    models.BookingStatus(r.URL.Query().Get("status")),
+		Status:    []models.BookingStatus{models.BookingStatus(r.URL.Query().Get("status"))},
 	}
 
 	bookings, count, err := h.bookingService.List(r.Context(), filter)

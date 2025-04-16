@@ -163,8 +163,25 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		log.Println("failed to list bookings for room:", err)
 		return models.Booking{}, err
 	} else if bsCount > 0 {
-		log.Printf("room %s is already booked for the selected dates", booking.RoomID)
-		return models.Booking{}, fmt.Errorf("room %s is already booked for the selected dates", booking.RoomID)
+		bookings, bookingCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
+			RoomID:     dto.RoomID,
+			LatestDate: dto.EndDate,
+			Status:     []models.BookingStatus{models.BookingStatusPending, models.BookingStatusConfirmed},
+		})
+		if err == nil && bookingCount > 0 {
+			nearestFreeDate := fmt.Sprintf("%s - %s", booking.EndDate.Format("2006-01-02"), bookings[0].StartDate.AddDate(0, 0, -1).Format("2006-01-02"))
+			log.Printf("Room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
+			return models.Booking{}, fmt.Errorf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
+		} else if bookingCount <= 0 {
+			daysBetween := booking.EndDate.Sub(booking.StartDate).Hours() / 24
+			nearestEndDate := booking.StartDate.AddDate(0, 0, int(daysBetween)).Format("2006-01-02")
+			nearestFreeDate := fmt.Sprintf("%s - %s", booking.StartDate.Format("2006-01-02"), nearestEndDate)
+			log.Printf("Room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
+			return models.Booking{}, fmt.Errorf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
+		}
+
+		log.Println("failed to list bookings for room:", err)
+		return models.Booking{}, err
 	}
 
 	newBooking, err := s.bookingStorage.Create(ctx, booking)
