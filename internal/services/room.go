@@ -31,31 +31,41 @@ func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) (
 		return nil, 0, err
 	}
 
+	if rsCount == 0 {
+		return nil, 0, nil
+	}
+
+	roomIDs := make([]string, 0, rsCount)
+	roomIDMap := make(map[string]bool, rsCount)
+
+	for _, room := range rooms {
+		if !roomIDMap[room.ID] {
+			roomIDs = append(roomIDs, room.ID)
+			roomIDMap[room.ID] = true
+		}
+	}
+
+	extras, _, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomIDs: roomIDs})
+	if err != nil {
+		log.Println("Error listing extra services:", err)
+		return nil, 0, err
+	}
+
+	extraMap := make(map[string][]dto.ListExtraServiceResponse)
+	for _, es := range extras {
+		extraMap[es.RoomID] = append(extraMap[es.RoomID], dto.ListExtraServiceResponse{
+			ID:    es.ID,
+			Name:  es.Name,
+			Price: es.Price,
+		})
+	}
+
 	var responseRoom []dto.ListRoomResponse
 	for _, room := range rooms {
-		extraServices, _, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomID: room.ID})
-		if err != nil {
-			log.Println("Error listing extra services:", err)
-			return nil, 0, err
-		}
-
-		var ess []dto.ListExtraServiceResponse
-		for _, es := range extraServices {
-			ess = append(ess, dto.ListExtraServiceResponse{
-				ID:    es.ID,
-				Name:  es.Name,
-				Price: es.Price,
-			})
-		}
-		if err != nil {
-			log.Println("Error listing extra services:", err)
-			return nil, 0, err
-		}
-
 		responseRoom = append(responseRoom, dto.ListRoomResponse{
 			ID:            room.ID,
 			HotelID:       room.HotelID,
-			ExtraServices: ess,
+			ExtraServices: extraMap[room.ID],
 			Type:          room.Type,
 			Capacity:      room.Capacity,
 			Price:         room.Price,
