@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
@@ -13,15 +14,19 @@ import (
 
 func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) {
 	filter := storage.ListBookingFilter{
-		ID:        r.URL.Query().Get("id"),
-		UserID:    r.URL.Query().Get("user_id"),
-		RoomID:    r.URL.Query().Get("room_id"),
-		StartDate: r.URL.Query().Get("start_date"),
-		EndDate:   r.URL.Query().Get("end_date"),
+		ID:     r.URL.Query().Get("id"),
+		UserID: r.URL.Query().Get("user_id"),
+		RoomID: r.URL.Query().Get("room_id"),
 	}
 
 	if status := r.URL.Query().Get("status"); status != "" {
 		filter.Status = append(filter.Status, models.BookingStatus(status))
+	}
+	if startDate := r.URL.Query().Get("start_date"); startDate != "" {
+		filter.StartDate, _ = time.Parse(time.RFC3339, startDate)
+	}
+	if endDate := r.URL.Query().Get("end_date"); endDate != "" {
+		filter.EndDate, _ = time.Parse(time.RFC3339, endDate)
 	}
 
 	bookings, count, err := h.bookingService.List(r.Context(), filter)

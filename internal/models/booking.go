@@ -38,7 +38,7 @@ func NewBooking(
 	if err != nil {
 		return Booking{}, fmt.Errorf("error parsing start date: %w", err)
 	}
-	startDate = time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 10, 0, 0, 0, startDate.Location())
+	startDate = time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 11, 0, 0, 0, startDate.Location())
 
 	endDate, err := time.Parse(timeLayout, endDateStr)
 	if err != nil {

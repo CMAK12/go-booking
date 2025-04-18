@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"go-booking/internal/models"
 
@@ -19,8 +20,8 @@ type ListBookingFilter struct {
 	ID         string                 `json:"id"`
 	RoomID     string                 `json:"room_id"`
 	UserID     string                 `json:"user_id"`
-	StartDate  string                 `json:"start_date"`
-	EndDate    string                 `json:"end_date"`
+	StartDate  time.Time              `json:"start_date"`
+	EndDate    time.Time              `json:"end_date"`
 	LatestDate string                 `json:"-"`
 	Status     []models.BookingStatus `json:"status"`
 }
@@ -41,7 +42,8 @@ func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]
 
 			"COUNT(*) OVER() AS total_count",
 		).
-		From(fmt.Sprintf("%s AS bt", bookingTable))
+		From(fmt.Sprintf("%s AS bt", bookingTable)).
+		OrderBy("bt.start_date ASC")
 
 	qb, err := buildSearchBookingQuery(qb, filter)
 	if err != nil {
@@ -109,7 +111,6 @@ func (s *bookingStorage) Update(ctx context.Context, id string, booking models.B
 		Set("status", booking.Status).
 		Where(sq.Eq{"id": id}).
 		ToSql()
-
 	if err != nil {
 		return models.Booking{}, fmt.Errorf("failed to build query: %w", err)
 	}
@@ -149,9 +150,9 @@ func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) (sq.
 	if filter.UserID != "" {
 		qb = qb.Where(sq.Eq{"bt.user_id": filter.UserID})
 	}
-	if filter.StartDate != "" && filter.EndDate != "" {
-		if filter.StartDate >= filter.EndDate {
-			return qb, fmt.Errorf("start date is bigger than end date")
+	if !filter.StartDate.IsZero() && !filter.EndDate.IsZero() {
+		if filter.StartDate.After(filter.EndDate) {
+			return qb, fmt.Errorf("start date is later than end date")
 		}
 		qb = qb.Where(sq.And{
 			sq.Lt{"bt.start_date": filter.EndDate},
@@ -159,9 +160,7 @@ func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) (sq.
 		})
 	}
 	if filter.LatestDate != "" {
-		qb = qb.Where(sq.And{
-			sq.GtOrEq{"bt.start_date": filter.LatestDate},
-		})
+		qb = qb.Where(sq.Gt{"bt.end_date": filter.LatestDate})
 	}
 	if filter.Status != nil {
 		qb = qb.Where(sq.Eq{"bt.status": filter.Status})

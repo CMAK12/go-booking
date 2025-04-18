@@ -10,6 +10,8 @@ import (
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
 
+	"math"
+
 	"github.com/veyselaksin/gomailer/pkg/mailer"
 )
 
@@ -154,10 +156,10 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 	}
 
 	// Check room availability
-	_, overlapCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
+	overlapBookings, overlapCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
 		RoomID:    dto.RoomID,
-		StartDate: dto.StartDate,
-		EndDate:   dto.EndDate,
+		StartDate: booking.StartDate,
+		EndDate:   booking.EndDate,
 	})
 	if err != nil {
 		log.Printf("failed to check room availability: %v", err)
@@ -175,31 +177,33 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 			return models.Booking{}, err
 		}
 
-		var nearestFreeDate string
+		var nextAvailableDateRange string
 		if count > 0 {
-			latestEndDate := bookings[0].EndDate
-			for _, b := range bookings[1:] {
-				if b.EndDate.After(latestEndDate) {
-					latestEndDate = b.EndDate
+			mostRecentBooking := bookings[0]
+			duration := booking.EndDate.Sub(booking.StartDate).Hours()
+			for _, currentBooking := range bookings[1:] {
+				gapToNextBookingHours := currentBooking.StartDate.Sub(mostRecentBooking.EndDate).Hours()
+				if gapToNextBookingHours >= duration {
+					break
 				}
+				mostRecentBooking = currentBooking
 			}
 
-			days := int(booking.EndDate.Sub(booking.StartDate).Hours() / 24)
-			nextAvailableStart := latestEndDate.AddDate(0, 0, 1)
-			nextAvailableEnd := nextAvailableStart.AddDate(0, 0, days)
-
-			nearestFreeDate = fmt.Sprintf("%s - %s",
-				nextAvailableStart.Format("2006-01-02"),
-				nextAvailableEnd.Format("2006-01-02"))
+			days := duration / 24
+			nextAvailableEndDate := mostRecentBooking.EndDate.AddDate(0, 0, int(math.Round(days)))
+			nextAvailableDateRange = fmt.Sprintf("%s - %s",
+				mostRecentBooking.EndDate.Format("2006-01-02"),
+				nextAvailableEndDate.Format("2006-01-02"))
 		} else {
-			days := int(booking.EndDate.Sub(booking.StartDate).Hours() / 24)
-			nearestEnd := booking.StartDate.AddDate(0, 0, days)
-			nearestFreeDate = fmt.Sprintf("%s - %s",
-				booking.StartDate.Format("2006-01-02"),
+			days := math.Round(overlapBookings[0].EndDate.Sub(booking.StartDate).Hours() / 24)
+			nearestStart := booking.StartDate.AddDate(0, 0, int(days))
+			nearestEnd := booking.EndDate.AddDate(0, 0, int(days))
+			nextAvailableDateRange = fmt.Sprintf("%s - %s",
+				nearestStart.Format("2006-01-02"),
 				nearestEnd.Format("2006-01-02"))
 		}
 
-		msg := fmt.Sprintf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nearestFreeDate)
+		msg := fmt.Sprintf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nextAvailableDateRange)
 		log.Println(msg)
 		return models.Booking{}, fmt.Errorf("%s", msg)
 	}
