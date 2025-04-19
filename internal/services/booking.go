@@ -18,6 +18,7 @@ import (
 type bookingService struct {
 	bookingStorage      storage.BookingStorage
 	hotelStorage        storage.HotelStorage
+	roomStorage         storage.RoomStorage
 	roomService         RoomService
 	userStorage         storage.UserStorage
 	extraServiceStorage storage.ExtraServiceStorage
@@ -27,6 +28,7 @@ type bookingService struct {
 func NewBookingService(
 	bookingStorage storage.BookingStorage,
 	hotelStorage storage.HotelStorage,
+	roomStorage storage.RoomStorage,
 	roomService RoomService,
 	userStorage storage.UserStorage,
 	extraServiceStorage storage.ExtraServiceStorage,
@@ -35,6 +37,7 @@ func NewBookingService(
 	return &bookingService{
 		bookingStorage:      bookingStorage,
 		hotelStorage:        hotelStorage,
+		roomStorage:         roomStorage,
 		roomService:         roomService,
 		userStorage:         userStorage,
 		extraServiceStorage: extraServiceStorage,
@@ -166,7 +169,14 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		return models.Booking{}, err
 	}
 
-	if overlapCount > 0 {
+	rooms, roomsCount, err := s.roomStorage.List(ctx, storage.ListRoomFilter{ID: booking.RoomID})
+	if err != nil || roomsCount == 0 {
+		log.Printf("failed to retrieve room for booking: %v", err)
+		return models.Booking{}, err
+	}
+	isAvailable := int64(rooms[0].Quantity) <= overlapCount
+
+	if overlapCount > 0 && isAvailable {
 		bookings, count, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
 			RoomID:     dto.RoomID,
 			LatestDate: dto.EndDate,
