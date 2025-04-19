@@ -7,20 +7,25 @@ import (
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type roomService struct {
 	roomStorage         storage.RoomStorage
 	extraServiceStorage storage.ExtraServiceStorage
+	rdb                 *redis.Client
 }
 
 func NewRoomService(
 	roomStorage storage.RoomStorage,
 	extraServiceStorage storage.ExtraServiceStorage,
+	rdb *redis.Client,
 ) RoomService {
 	return &roomService{
 		roomStorage:         roomStorage,
 		extraServiceStorage: extraServiceStorage,
+		rdb:                 rdb,
 	}
 }
 
@@ -46,10 +51,6 @@ func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) (
 				Name:  es.Name,
 				Price: es.Price,
 			})
-		}
-		if err != nil {
-			log.Println("Error listing extra services:", err)
-			return nil, 0, err
 		}
 
 		responseRoom = append(responseRoom, dto.ListRoomResponse{

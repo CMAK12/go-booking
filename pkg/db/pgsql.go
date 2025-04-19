@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func MustConnect(ctx context.Context, pgConfig config.PostgresConfig) (*pgxpool.Pool, string) {
+func MustConnectPostgres(ctx context.Context, pgConfig config.PostgresConfig) (*pgxpool.Pool, string) {
 	dsn := pgConfig.BuildConnectionString()
 
 	poolConfig, err := pgxpool.ParseConfig(dsn)

@@ -11,6 +11,7 @@ import (
 	v1 "go-booking/internal/controllers/http/v1"
 	service "go-booking/internal/services"
 	"go-booking/internal/storage"
+	redis "go-booking/pkg/caching"
 	"go-booking/pkg/db"
 
 	"github.com/go-chi/chi/v5"
@@ -26,8 +27,10 @@ func MustRun() {
 
 	mailAuth := cfg.PostSender.AuthenticateMailer()
 
-	pgConn, dsn := db.MustConnect(ctx, cfg.Postgres)
+	pgConn, dsn := db.MustConnectPostgres(ctx, cfg.Postgres)
 	migrate(dsn)
+
+	rdb := redis.MustConnectRedis(ctx, cfg.Redis)
 
 	_, shutdownCancel := context.WithTimeout(ctx, 10*time.Second)
 	defer shutdownCancel()
@@ -40,7 +43,7 @@ func MustRun() {
 
 	userService := service.NewUserService(userStorage)
 	hotelService := service.NewHotelService(hotelStorage)
-	roomService := service.NewRoomService(roomStorage, extraServiceStorage)
+	roomService := service.NewRoomService(roomStorage, extraServiceStorage, rdb)
 	extraServiceService := service.NewExtraServiceService(extraServiceStorage)
 	bookingService := service.NewBookingService(
 		bookingStorage,

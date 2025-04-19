@@ -13,6 +13,7 @@ type (
 	Config struct {
 		HTTP       HTTPConfig       `envPrefix:"HTTP_CONFIG"`
 		Postgres   PostgresConfig   `envPrefix:"POSTGRES_URL"`
+		Redis      RedisConfig      `envPrefix:"REDIS_URL"`
 		PostSender PostSenderConfig `envPrefix:"POST_SENDER"`
 	}
 
@@ -27,6 +28,12 @@ type (
 		User     string `env:"DB_USER"`
 		Password string `env:"DB_PASSWORD"`
 		SSLMode  string `env:"DB_SSLMODE" default:"disable"`
+	}
+
+	RedisConfig struct {
+		Addr     string `env:"REDIS_ADDR"`
+		Password string `env:"REDIS_PASSWORD"`
+		DB       int    `env:"REDIS_DB" default:"0"`
 	}
 
 	PostSenderConfig struct {
