@@ -158,64 +158,8 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 		return models.Booking{}, err
 	}
 
-	// Check room availability
-	overlapBookings, overlapCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
-		RoomID:    dto.RoomID,
-		StartDate: booking.StartDate,
-		EndDate:   booking.EndDate,
-	})
-	if err != nil {
-		log.Printf("failed to check room availability: %v", err)
+	if err := s.checkRoomAvailability(ctx, booking, dto); err != nil {
 		return models.Booking{}, err
-	}
-
-	rooms, roomsCount, err := s.roomStorage.List(ctx, storage.ListRoomFilter{ID: booking.RoomID})
-	if err != nil || roomsCount == 0 {
-		log.Printf("failed to retrieve room for booking: %v", err)
-		return models.Booking{}, err
-	}
-	isAvailable := int64(rooms[0].Quantity) <= overlapCount
-
-	if overlapCount > 0 && isAvailable {
-		bookings, count, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
-			RoomID:     dto.RoomID,
-			LatestDate: dto.EndDate,
-			Status:     []models.BookingStatus{models.BookingStatusPending, models.BookingStatusConfirmed},
-		})
-		if err != nil {
-			log.Printf("failed to retrieve conflicting bookings: %v", err)
-			return models.Booking{}, err
-		}
-
-		var nextAvailableDateRange string
-		if count > 0 {
-			mostRecentBooking := bookings[0]
-			duration := booking.EndDate.Sub(booking.StartDate).Hours()
-			for _, currentBooking := range bookings[1:] {
-				gapToNextBookingHours := currentBooking.StartDate.Sub(mostRecentBooking.EndDate).Hours()
-				if gapToNextBookingHours >= duration {
-					break
-				}
-				mostRecentBooking = currentBooking
-			}
-
-			days := duration / 24
-			nextAvailableEndDate := mostRecentBooking.EndDate.AddDate(0, 0, int(math.Round(days)))
-			nextAvailableDateRange = fmt.Sprintf("%s - %s",
-				mostRecentBooking.EndDate.Format("2006-01-02"),
-				nextAvailableEndDate.Format("2006-01-02"))
-		} else {
-			days := math.Round(overlapBookings[0].EndDate.Sub(booking.StartDate).Hours() / 24)
-			nearestStart := booking.StartDate.AddDate(0, 0, int(days))
-			nearestEnd := booking.EndDate.AddDate(0, 0, int(days))
-			nextAvailableDateRange = fmt.Sprintf("%s - %s",
-				nearestStart.Format("2006-01-02"),
-				nearestEnd.Format("2006-01-02"))
-		}
-
-		msg := fmt.Sprintf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nextAvailableDateRange)
-		log.Println(msg)
-		return models.Booking{}, fmt.Errorf("%s", msg)
 	}
 
 	newBooking, err := s.bookingStorage.Create(ctx, booking)
@@ -274,5 +218,68 @@ func (s *bookingService) Delete(ctx context.Context, id string) error {
 		log.Println("failed to delete booking:", err)
 		return err
 	}
+	return nil
+}
+
+func (s *bookingService) checkRoomAvailability(ctx context.Context, booking models.Booking, dto dto.CreateBookingRequest) error {
+	overlapBookings, overlapCount, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
+		RoomID:    booking.RoomID,
+		StartDate: booking.StartDate,
+		EndDate:   booking.EndDate,
+	})
+	if err != nil {
+		log.Printf("failed to check room availability: %v", err)
+		return err
+	}
+
+	rooms, roomsCount, err := s.roomStorage.List(ctx, storage.ListRoomFilter{ID: booking.RoomID})
+	if err != nil || roomsCount == 0 {
+		log.Printf("failed to retrieve room for booking: %v", err)
+		return err
+	}
+
+	isAvailable := int64(rooms[0].Quantity) <= overlapCount
+	if overlapCount > 0 && isAvailable {
+		bookings, count, err := s.bookingStorage.List(ctx, storage.ListBookingFilter{
+			RoomID:     booking.RoomID,
+			LatestDate: dto.EndDate,
+			Status:     []models.BookingStatus{models.BookingStatusPending, models.BookingStatusConfirmed},
+		})
+		if err != nil {
+			log.Printf("failed to retrieve conflicting bookings: %v", err)
+			return err
+		}
+
+		var nextAvailableDateRange string
+		if count > 0 {
+			mostRecentBooking := bookings[0]
+			duration := booking.EndDate.Sub(booking.StartDate).Hours()
+			for _, currentBooking := range bookings[1:] {
+				gapToNextBookingHours := currentBooking.StartDate.Sub(mostRecentBooking.EndDate).Hours()
+				if gapToNextBookingHours >= duration {
+					break
+				}
+				mostRecentBooking = currentBooking
+			}
+
+			days := duration / 24
+			nextAvailableEndDate := mostRecentBooking.EndDate.AddDate(0, 0, int(math.Round(days)))
+			nextAvailableDateRange = fmt.Sprintf("%s - %s",
+				mostRecentBooking.EndDate.Format("2006-01-02"),
+				nextAvailableEndDate.Format("2006-01-02"))
+		} else {
+			days := math.Round(overlapBookings[0].EndDate.Sub(booking.StartDate).Hours() / 24)
+			nearestStart := booking.StartDate.AddDate(0, 0, int(days))
+			nearestEnd := booking.EndDate.AddDate(0, 0, int(days))
+			nextAvailableDateRange = fmt.Sprintf("%s - %s",
+				nearestStart.Format("2006-01-02"),
+				nearestEnd.Format("2006-01-02"))
+		}
+
+		msg := fmt.Sprintf("room %s is already booked for the selected dates. Nearest free dates: %s", booking.RoomID, nextAvailableDateRange)
+		log.Println(msg)
+		return fmt.Errorf("%s", msg)
+	}
+
 	return nil
 }
