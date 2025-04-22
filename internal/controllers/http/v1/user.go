@@ -11,7 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	filter := storage.ListUserFilter{
 		ID:       r.URL.Query().Get("id"),
 		Username: r.URL.Query().Get("username"),
@@ -22,55 +22,54 @@ func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
 	users, count, err := h.userService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusOK, users, count)
+	return users, http.StatusOK, count, nil
 }
 
-func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	var req dto.CreateUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return nil, http.StatusBadRequest, 0, err
 	}
 
 	user, err := h.userService.Create(r.Context(), req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusCreated, user)
+	return user, http.StatusCreated, 1, nil
 }
 
-func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	id := chi.URLParam(r, "id")
 
 	var req dto.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return nil, http.StatusBadRequest, 0, err
 	}
 
 	user, err := h.userService.Update(r.Context(), id, req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusOK, user)
+	return user, http.StatusOK, 1, nil
 }
 
-func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	id := chi.URLParam(r, "id")
 
 	if err := h.userService.Delete(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte("User deleted successfully"))
+	return nil, http.StatusNoContent, 0, nil
 }

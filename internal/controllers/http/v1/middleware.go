@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"time"
@@ -15,4 +16,35 @@ func Logger(next http.Handler) http.Handler {
 
 		log.Printf("Completed %s in %v", r.URL.Path, time.Since(start))
 	})
+}
+
+func ResponseWrapper(handler func(w http.ResponseWriter, r *http.Request) (any, int, int64, error)) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		resp, status, count, err := handler(w, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		writeJSON(w, status, resp, count)
+	}
+}
+
+func writeJSON(w http.ResponseWriter, status int, data interface{}, count ...int64) {
+	response := map[string]interface{}{
+		"data": data,
+	}
+
+	if len(count) > 0 {
+		response["count"] = count[0]
+	}
+
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	w.Write(jsonData)
 }

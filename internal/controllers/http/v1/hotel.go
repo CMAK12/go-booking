@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	filter := storage.ListHotelFilter{
 		ID:          r.URL.Query().Get("id"),
 		Name:        r.URL.Query().Get("name"),
@@ -25,7 +25,7 @@ func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) {
 		ratingFloat, err := strconv.ParseFloat(rating, 64)
 		if err != nil {
 			http.Error(w, "invalid rating", http.StatusBadRequest)
-			return
+			return nil, http.StatusBadRequest, 0, err
 		}
 		filter.Rating = ratingFloat
 	}
@@ -33,55 +33,54 @@ func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) {
 	hotels, count, err := h.hotelService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusOK, hotels, count)
+	return hotels, http.StatusOK, count, nil
 }
 
-func (h *Handler) createHotel(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) createHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	dto := dto.CreateHotelRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return nil, http.StatusBadRequest, 0, err
 	}
 
 	hotel, err := h.hotelService.Create(r.Context(), dto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusCreated, hotel)
+	return hotel, http.StatusCreated, 1, nil
 }
 
-func (h *Handler) updateHotel(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) updateHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	id := chi.URLParam(r, "id")
 
 	hotel := models.Hotel{}
 	if err := json.NewDecoder(r.Body).Decode(&hotel); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return nil, http.StatusBadRequest, 0, err
 	}
 
 	hotel, err := h.hotelService.Update(r.Context(), id, hotel)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusOK, hotel)
+	return hotel, http.StatusOK, 1, nil
 }
 
-func (h *Handler) deleteHotel(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) deleteHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	id := chi.URLParam(r, "id")
 
 	err := h.hotelService.Delete(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte("hotel deleted successfully"))
+	return nil, http.StatusNoContent, 0, nil
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	query := r.URL.Query()
 
 	filter := storage.ListRoomFilter{
@@ -27,7 +27,7 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 		p, err := strconv.Atoi(price)
 		if err != nil {
 			http.Error(w, "Invalid price value", http.StatusBadRequest)
-			return
+			return nil, http.StatusBadRequest, 0, err
 		}
 		filter.Price = p
 	}
@@ -35,7 +35,7 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 		c, err := strconv.Atoi(capacity)
 		if err != nil {
 			http.Error(w, "Invalid capacity value", http.StatusBadRequest)
-			return
+			return nil, http.StatusBadRequest, 0, err
 		}
 		filter.Capacity = c
 	}
@@ -43,7 +43,7 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 		q, err := strconv.Atoi(quantity)
 		if err != nil {
 			http.Error(w, "Invalid quantity value", http.StatusBadRequest)
-			return
+			return nil, http.StatusBadRequest, 0, err
 		}
 		filter.Quantity = q
 	}
@@ -51,57 +51,56 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 	rooms, count, err := h.roomService.List(r.Context(), filter)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusOK, rooms, count)
+	return rooms, http.StatusOK, count, nil
 }
 
-func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	var dto dto.CreateRoomRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return nil, http.StatusBadRequest, 0, err
 	}
 	defer r.Body.Close()
 
 	room, err := h.roomService.Create(r.Context(), dto)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusCreated, room)
+	return room, http.StatusCreated, 1, nil
 }
 
-func (h *Handler) updateRoom(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) updateRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	id := chi.URLParam(r, "id")
 
 	var room models.Room
 	if err := json.NewDecoder(r.Body).Decode(&room); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
+		return nil, http.StatusBadRequest, 0, err
 	}
 	defer r.Body.Close()
 
 	room, err := h.roomService.Update(r.Context(), id, room)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	writeJSON(w, http.StatusOK, room)
+	return room, http.StatusOK, 1, nil
 }
 
-func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	id := chi.URLParam(r, "id")
 
 	err := h.roomService.Delete(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+		return nil, http.StatusInternalServerError, 0, err
 	}
 
-	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte("Room deleted successfully"))
+	return nil, http.StatusNoContent, 0, nil
 }
