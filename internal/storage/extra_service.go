@@ -15,10 +15,11 @@ type extraServiceStorage struct {
 }
 
 type ListExtraServiceFilter struct {
-	ID     string `json:"id"`
-	RoomID string `json:"room_id"`
-	Name   string `json:"name"`
-	Price  int    `json:"price"`
+	ID      string   `json:"id"`
+	RoomID  string   `json:"room_id"`
+	RoomIDs []string `json:"room_ids"`
+	Name    string   `json:"name"`
+	Price   int      `json:"price"`
 }
 
 func NewExtraServiceStorage(db *pgxpool.Pool) ExtraServiceStorage {
@@ -142,6 +143,9 @@ func buildSearchExtraServiceQuery(qb sq.SelectBuilder, filter ListExtraServiceFi
 	}
 	if filter.RoomID != "" {
 		qb = qb.Where(sq.Eq{"room_id": filter.RoomID})
+	}
+	if len(filter.RoomIDs) > 0 {
+		qb = qb.Where(sq.Eq{"room_id": filter.RoomIDs})
 	}
 	if filter.Name != "" {
 		qb = qb.Where(sq.Like{"name": "%" + filter.Name + "%"})
