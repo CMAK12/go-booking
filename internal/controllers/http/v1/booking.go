@@ -2,7 +2,6 @@ package v1
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"go-booking/internal/dto"
@@ -17,7 +16,11 @@ func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) {
 
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
-	fmt.Println(decoder.Decode(&filter, r.URL.Query()))
+
+	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	bookings, count, err := h.bookingService.List(r.Context(), filter)
 	if err != nil {

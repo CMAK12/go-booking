@@ -2,7 +2,6 @@ package v1
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"go-booking/internal/dto"
@@ -22,8 +21,6 @@ func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return
 	}
-
-	fmt.Println("Filter:", filter)
 
 	users, count, err := h.userService.List(r.Context(), filter)
 	if err != nil {
