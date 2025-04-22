@@ -30,13 +30,12 @@ func ResponseWrapper(handler func(w http.ResponseWriter, r *http.Request) (any, 
 	}
 }
 
-func writeJSON(w http.ResponseWriter, status int, data interface{}, count ...int64) {
-	response := map[string]interface{}{
+func writeJSON(w http.ResponseWriter, status int, data any, count int64) {
+	response := map[string]any{
 		"data": data,
 	}
-
-	if len(count) > 0 {
-		response["count"] = count[0]
+	if count > 0 {
+		response["count"] = count
 	}
 
 	jsonData, err := json.Marshal(response)
@@ -44,6 +43,7 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}, count ...int
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	w.Write(jsonData)
