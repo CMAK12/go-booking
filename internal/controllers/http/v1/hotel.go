@@ -6,19 +6,22 @@ import (
 	"strconv"
 
 	"go-booking/internal/dto"
+	"go-booking/internal/filter"
 	"go-booking/internal/models"
-	"go-booking/internal/storage"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 )
 
 func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) {
-	filter := storage.ListHotelFilter{
-		ID:          r.URL.Query().Get("id"),
-		Name:        r.URL.Query().Get("name"),
-		City:        r.URL.Query().Get("city"),
-		Address:     r.URL.Query().Get("address"),
-		Description: r.URL.Query().Get("description"),
+	var filter filter.ListHotelFilter
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	if rating := r.URL.Query().Get("rating"); rating != "" {

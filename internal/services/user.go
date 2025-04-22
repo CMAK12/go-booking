@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"go-booking/internal/dto"
+	"go-booking/internal/filter"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
 	"log"
@@ -16,7 +17,7 @@ func NewUserService(userStorage storage.UserStorage) UserService {
 	return &userService{userStorage: userStorage}
 }
 
-func (s *userService) List(ctx context.Context, filter storage.ListUserFilter) ([]models.User, int64, error) {
+func (s *userService) List(ctx context.Context, filter filter.ListUserFilter) ([]models.User, int64, error) {
 	users, count, err := s.userStorage.List(ctx, filter)
 	if err != nil {
 		log.Println("error listing users", err)

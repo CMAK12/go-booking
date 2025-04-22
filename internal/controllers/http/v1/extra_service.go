@@ -3,29 +3,24 @@ package v1
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"go-booking/internal/dto"
+	"go-booking/internal/filter"
 	"go-booking/internal/models"
-	"go-booking/internal/storage"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 )
 
 func (h *Handler) listExtraService(w http.ResponseWriter, r *http.Request) {
-	filter := storage.ListExtraServiceFilter{
-		ID:     r.URL.Query().Get("id"),
-		RoomID: r.URL.Query().Get("room_id"),
-		Name:   r.URL.Query().Get("name"),
-	}
+	var filter filter.ListExtraServiceFilter
 
-	if price := r.URL.Query().Get("price"); price != "" {
-		parsedPrice, err := strconv.Atoi(price)
-		if err != nil {
-			http.Error(w, "invalid price", http.StatusBadRequest)
-			return
-		}
-		filter.Price = parsedPrice
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	rooms, count, err := h.extraService.List(r.Context(), filter)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go-booking/internal/filter"
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
@@ -15,15 +16,6 @@ type bookingStorage struct {
 	builder sq.StatementBuilderType
 }
 
-type ListBookingFilter struct {
-	ID        string               `json:"id"`
-	RoomID    string               `json:"room_id"`
-	UserID    string               `json:"user_id"`
-	StartDate string               `json:"start_date"`
-	EndDate   string               `json:"end_date"`
-	Status    models.BookingStatus `json:"status"`
-}
-
 func NewBookingStorage(db *pgxpool.Pool) BookingStorage {
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
@@ -33,7 +25,7 @@ func NewBookingStorage(db *pgxpool.Pool) BookingStorage {
 	}
 }
 
-func (s *bookingStorage) List(ctx context.Context, filter ListBookingFilter) ([]models.Booking, int64, error) {
+func (s *bookingStorage) List(ctx context.Context, filter filter.ListBookingFilter) ([]models.Booking, int64, error) {
 	qb := s.builder.
 		Select(
 			"bt.id", "bt.user_id", "bt.room_id", "bt.start_date", "bt.end_date", "bt.status",
@@ -138,7 +130,7 @@ func (s *bookingStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) (sq.SelectBuilder, error) {
+func buildSearchBookingQuery(qb sq.SelectBuilder, filter filter.ListBookingFilter) (sq.SelectBuilder, error) {
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"bt.id": filter.ID})
 	}

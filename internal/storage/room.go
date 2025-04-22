@@ -3,8 +3,8 @@ package storage
 import (
 	"context"
 	"fmt"
-	"strconv"
 
+	"go-booking/internal/filter"
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
@@ -16,18 +16,6 @@ type roomStorage struct {
 	builder sq.StatementBuilderType
 }
 
-type ListRoomFilter struct {
-	ID          string   `json:"id"`
-	IDs         []string `json:"ids,omitempty"`
-	HotelID     string   `json:"hotel_id"`
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Price       int      `json:"price"`
-	Capacity    int      `json:"capacity"`
-	Quantity    int      `json:"quantity"`
-	Available   string   `json:"available"`
-}
-
 func NewRoomStorage(db *pgxpool.Pool) RoomStorage {
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
@@ -37,7 +25,7 @@ func NewRoomStorage(db *pgxpool.Pool) RoomStorage {
 	}
 }
 
-func (s *roomStorage) List(ctx context.Context, filter ListRoomFilter) ([]models.Room, int64, error) {
+func (s *roomStorage) List(ctx context.Context, filter filter.ListRoomFilter) ([]models.Room, int64, error) {
 	qb := s.builder.
 		Select(
 			"r.id", "r.hotel_id", "r.type", "r.capacity", "r.price", "r.quantity",
@@ -141,7 +129,7 @@ func (s *roomStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchRoomFilter(qb sq.SelectBuilder, filter ListRoomFilter) (sq.SelectBuilder, error) {
+func buildSearchRoomFilter(qb sq.SelectBuilder, filter filter.ListRoomFilter) (sq.SelectBuilder, error) {
 	if len(filter.IDs) > 0 {
 		qb = qb.Where(sq.Eq{"r.id": filter.IDs})
 	}
@@ -165,13 +153,6 @@ func buildSearchRoomFilter(qb sq.SelectBuilder, filter ListRoomFilter) (sq.Selec
 	}
 	if filter.Quantity > 0 {
 		qb = qb.Where(sq.Eq{"r.quantity": filter.Quantity})
-	}
-	if filter.Available != "" {
-		available, err := strconv.ParseBool(filter.Available)
-		if err != nil {
-			return qb, err
-		}
-		qb = qb.Where(sq.Eq{"r.available": available})
 	}
 
 	return qb, nil

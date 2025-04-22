@@ -2,24 +2,22 @@ package v1
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"go-booking/internal/dto"
-	"go-booking/internal/models"
-	"go-booking/internal/storage"
+	"go-booking/internal/filter"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 )
 
 func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) {
-	filter := storage.ListBookingFilter{
-		ID:        r.URL.Query().Get("id"),
-		UserID:    r.URL.Query().Get("user_id"),
-		RoomID:    r.URL.Query().Get("room_id"),
-		StartDate: r.URL.Query().Get("start_date"),
-		EndDate:   r.URL.Query().Get("end_date"),
-		Status:    models.BookingStatus(r.URL.Query().Get("status")),
-	}
+	var filter filter.ListBookingFilter
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+	fmt.Println(decoder.Decode(&filter, r.URL.Query()))
 
 	bookings, count, err := h.bookingService.List(r.Context(), filter)
 	if err != nil {

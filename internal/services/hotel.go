@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"go-booking/internal/dto"
+	"go-booking/internal/filter"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
 )
@@ -17,7 +18,7 @@ func NewHotelService(hotelStorage storage.HotelStorage) HotelService {
 	return &hotelService{hotelStorage: hotelStorage}
 }
 
-func (s *hotelService) List(ctx context.Context, filter storage.ListHotelFilter) ([]models.Hotel, int64, error) {
+func (s *hotelService) List(ctx context.Context, filter filter.ListHotelFilter) ([]models.Hotel, int64, error) {
 	hotels, count, err := s.hotelStorage.List(ctx, filter)
 	if err != nil {
 		log.Println("failed to list hotels:", err)
