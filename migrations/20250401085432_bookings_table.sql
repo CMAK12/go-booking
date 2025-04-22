@@ -11,6 +11,11 @@ CREATE TABLE IF NOT EXISTS bookings (
 -- +goose StatementEnd
 
 -- +goose StatementBegin
+ALTER TABLE bookings
+ADD CONSTRAINT check_dates CHECK (start_date < end_date);
+-- +goose StatementEnd
+
+-- +goose StatementBegin
 INSERT INTO bookings (id, user_id, room_id, start_date, end_date, status) VALUES
     (gen_random_uuid(), 'bf61bd3f-3b0a-4282-9ec6-cc4441e03f62', '7c5e05db-d822-4750-b9b8-881f2009f357', '2025-04-01 11:00:00', '2025-04-05 10:00:00', 'confirmed'),
     (gen_random_uuid(), 'bf61bd3f-3b0a-4282-9ec6-cc4441e03f62', 'e39c91e6-3674-4b29-871d-c87cb93a767f', '2025-04-10 11:00:00', '2025-04-15 10:00:00', 'pending'),

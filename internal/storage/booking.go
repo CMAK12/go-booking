@@ -151,9 +151,6 @@ func buildSearchBookingQuery(qb sq.SelectBuilder, filter ListBookingFilter) (sq.
 		qb = qb.Where(sq.Eq{"bt.user_id": filter.UserID})
 	}
 	if !filter.StartDate.IsZero() && !filter.EndDate.IsZero() {
-		if filter.StartDate.After(filter.EndDate) {
-			return qb, fmt.Errorf("start date is later than end date")
-		}
 		qb = qb.Where(sq.And{
 			sq.Lt{"bt.start_date": filter.EndDate},
 			sq.Gt{"bt.end_date": filter.StartDate},
