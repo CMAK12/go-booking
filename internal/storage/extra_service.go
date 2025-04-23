@@ -3,7 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
-	"go-booking/internal/filter"
+	"go-booking/internal/dto"
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
@@ -24,7 +24,7 @@ func NewExtraServiceStorage(db *pgxpool.Pool) ExtraServiceStorage {
 	}
 }
 
-func (s *extraServiceStorage) List(ctx context.Context, filter filter.ListExtraServiceFilter) ([]models.ExtraService, int64, error) {
+func (s *extraServiceStorage) List(ctx context.Context, filter dto.ListExtraServiceFilter) ([]models.ExtraService, int64, error) {
 	qb := s.builder.
 		Select(
 			"id", "room_id", "name", "price",
@@ -130,7 +130,7 @@ func (s *extraServiceStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchExtraServiceQuery(qb sq.SelectBuilder, filter filter.ListExtraServiceFilter) sq.SelectBuilder {
+func buildSearchExtraServiceQuery(qb sq.SelectBuilder, filter dto.ListExtraServiceFilter) sq.SelectBuilder {
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"id": filter.ID})
 	}

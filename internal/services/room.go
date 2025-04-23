@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"go-booking/internal/dto"
-	"go-booking/internal/filter"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
 )
@@ -25,7 +24,7 @@ func NewRoomService(
 	}
 }
 
-func (s *roomService) List(ctx context.Context, rsFilter filter.ListRoomFilter) ([]dto.ListRoomResponse, int64, error) {
+func (s *roomService) List(ctx context.Context, rsFilter dto.ListRoomFilter) ([]dto.ListRoomResponse, int64, error) {
 	rooms, rsCount, err := s.roomStorage.List(ctx, rsFilter)
 	if err != nil {
 		log.Println("Error listing rooms:", err)
@@ -34,7 +33,7 @@ func (s *roomService) List(ctx context.Context, rsFilter filter.ListRoomFilter) 
 
 	var responseRoom []dto.ListRoomResponse
 	for _, room := range rooms {
-		extraServices, _, err := s.extraServiceStorage.List(ctx, filter.ListExtraServiceFilter{RoomID: room.ID})
+		extraServices, _, err := s.extraServiceStorage.List(ctx, dto.ListExtraServiceFilter{RoomID: room.ID})
 		if err != nil {
 			log.Println("Error listing extra services:", err)
 			return nil, 0, err

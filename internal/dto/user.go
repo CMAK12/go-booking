@@ -1,5 +1,7 @@
 package dto
 
+import "go-booking/internal/models"
+
 type CreateUserRequest struct {
 	Email    string `json:"email"`
 	Name     string `json:"name"`
@@ -18,4 +20,12 @@ type UpdateUserRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Role     string `json:"role"`
+}
+
+type ListUserFilter struct {
+	ID       string          `schema:"id"`
+	IDs      []string        `schema:"ids,omitempty"`
+	Username string          `schema:"username"`
+	Email    string          `schema:"email"`
+	Role     models.UserRole `schema:"role"`
 }

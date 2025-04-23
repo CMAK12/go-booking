@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"go-booking/internal/dto"
-	"go-booking/internal/filter"
 	"go-booking/internal/models"
 
 	"github.com/go-chi/chi/v5"
@@ -14,7 +13,7 @@ import (
 )
 
 func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) {
-	var filter filter.ListHotelFilter
+	var filter dto.ListHotelFilter
 
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)

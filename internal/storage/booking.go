@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"go-booking/internal/filter"
+	"go-booking/internal/dto"
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
@@ -25,7 +25,7 @@ func NewBookingStorage(db *pgxpool.Pool) BookingStorage {
 	}
 }
 
-func (s *bookingStorage) List(ctx context.Context, filter filter.ListBookingFilter) ([]models.Booking, int64, error) {
+func (s *bookingStorage) List(ctx context.Context, filter dto.ListBookingFilter) ([]models.Booking, int64, error) {
 	qb := s.builder.
 		Select(
 			"bt.id", "bt.user_id", "bt.room_id", "bt.start_date", "bt.end_date", "bt.status",
@@ -130,7 +130,7 @@ func (s *bookingStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchBookingQuery(qb sq.SelectBuilder, filter filter.ListBookingFilter) (sq.SelectBuilder, error) {
+func buildSearchBookingQuery(qb sq.SelectBuilder, filter dto.ListBookingFilter) (sq.SelectBuilder, error) {
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"bt.id": filter.ID})
 	}

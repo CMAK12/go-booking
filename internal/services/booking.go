@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"go-booking/internal/dto"
-	"go-booking/internal/filter"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
 
@@ -40,8 +39,8 @@ func NewBookingService(
 	}
 }
 
-func (s *bookingService) List(ctx context.Context, bsFilter filter.ListBookingFilter) ([]dto.ListBookingResponse, int64, error) {
-	bookings, count, err := s.bookingStorage.List(ctx, bsFilter)
+func (s *bookingService) List(ctx context.Context, filter dto.ListBookingFilter) ([]dto.ListBookingResponse, int64, error) {
+	bookings, count, err := s.bookingStorage.List(ctx, filter)
 	if err != nil {
 		log.Println("failed to list bookings:", err)
 		return nil, 0, err
@@ -68,7 +67,7 @@ func (s *bookingService) List(ctx context.Context, bsFilter filter.ListBookingFi
 		}
 	}
 
-	users, _, err := s.userStorage.List(ctx, filter.ListUserFilter{IDs: userIDs})
+	users, _, err := s.userStorage.List(ctx, dto.ListUserFilter{IDs: userIDs})
 	if err != nil {
 		log.Println("failed to list users:", err)
 		return nil, 0, err
@@ -78,7 +77,7 @@ func (s *bookingService) List(ctx context.Context, bsFilter filter.ListBookingFi
 		userMap[user.ID] = user
 	}
 
-	rooms, rsCount, err := s.roomService.List(ctx, filter.ListRoomFilter{IDs: roomIDs})
+	rooms, rsCount, err := s.roomService.List(ctx, dto.ListRoomFilter{IDs: roomIDs})
 	if err != nil {
 		log.Println("failed to list rooms:", err)
 		return nil, 0, err
@@ -95,7 +94,7 @@ func (s *bookingService) List(ctx context.Context, bsFilter filter.ListBookingFi
 		roomMap[room.ID] = room
 	}
 
-	hotels, _, err := s.hotelStorage.List(ctx, filter.ListHotelFilter{IDs: hotelIDs})
+	hotels, _, err := s.hotelStorage.List(ctx, dto.ListHotelFilter{IDs: hotelIDs})
 	if err != nil {
 		log.Println("failed to list hotels:", err)
 		return nil, 0, err
@@ -140,23 +139,23 @@ func (s *bookingService) List(ctx context.Context, bsFilter filter.ListBookingFi
 	return bookingResponse, count, nil
 }
 
-func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingRequest) (models.Booking, error) {
+func (s *bookingService) Create(ctx context.Context, bookingDTO dto.CreateBookingRequest) (models.Booking, error) {
 	booking, err := models.NewBooking(
-		dto.UserID,
-		dto.RoomID,
-		dto.HotelID,
-		dto.StartDate,
-		dto.EndDate,
+		bookingDTO.UserID,
+		bookingDTO.RoomID,
+		bookingDTO.HotelID,
+		bookingDTO.StartDate,
+		bookingDTO.EndDate,
 	)
 	if err != nil {
 		log.Println("failed to create booking:", err)
 		return models.Booking{}, err
 	}
 
-	_, bsCount, err := s.bookingStorage.List(ctx, filter.ListBookingFilter{
-		RoomID:    dto.RoomID,
-		StartDate: dto.StartDate,
-		EndDate:   dto.EndDate,
+	_, bsCount, err := s.bookingStorage.List(ctx, dto.ListBookingFilter{
+		RoomID:    bookingDTO.RoomID,
+		StartDate: bookingDTO.StartDate,
+		EndDate:   bookingDTO.EndDate,
 	})
 	if err != nil {
 		log.Println("failed to list bookings for room:", err)
@@ -188,7 +187,7 @@ func (s *bookingService) Create(ctx context.Context, dto dto.CreateBookingReques
 	// 	log.Println("email sent successfully to:", booking.User.Email)
 	// }()
 
-	bookings, _, err := s.List(ctx, filter.ListBookingFilter{ID: booking.ID})
+	bookings, _, err := s.List(ctx, dto.ListBookingFilter{ID: booking.ID})
 	if err != nil {
 		log.Println("failed to list bookings after creation:", err)
 		return models.Booking{}, err

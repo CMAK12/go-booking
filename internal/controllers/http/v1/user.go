@@ -5,14 +5,13 @@ import (
 	"net/http"
 
 	"go-booking/internal/dto"
-	"go-booking/internal/filter"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/gorilla/schema"
 )
 
 func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) {
-	var filter filter.ListUserFilter
+	var filter dto.ListUserFilter
 
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)

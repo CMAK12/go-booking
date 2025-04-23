@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"go-booking/internal/filter"
+	"go-booking/internal/dto"
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
@@ -25,7 +25,7 @@ func NewHotelStorage(db *pgxpool.Pool) HotelStorage {
 	}
 }
 
-func (s *hotelStorage) List(ctx context.Context, filter filter.ListHotelFilter) ([]models.Hotel, int64, error) {
+func (s *hotelStorage) List(ctx context.Context, filter dto.ListHotelFilter) ([]models.Hotel, int64, error) {
 	qb := s.builder.
 		Select(
 			"id", "name", "city", "address", "rating", "description",
@@ -128,7 +128,7 @@ func (s *hotelStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchHotelQuery(qb sq.SelectBuilder, filter filter.ListHotelFilter) sq.SelectBuilder {
+func buildSearchHotelQuery(qb sq.SelectBuilder, filter dto.ListHotelFilter) sq.SelectBuilder {
 	if len(filter.IDs) > 0 {
 		qb = qb.Where(sq.Eq{"id": filter.IDs})
 	}

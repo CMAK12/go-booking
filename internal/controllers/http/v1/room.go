@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"go-booking/internal/dto"
-	"go-booking/internal/filter"
 	"go-booking/internal/models"
 
 	"github.com/go-chi/chi/v5"
@@ -13,7 +12,7 @@ import (
 )
 
 func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
-	var filter filter.ListRoomFilter
+	var filter dto.ListRoomFilter
 
 	decoder := schema.NewDecoder()
 	decoder.IgnoreUnknownKeys(true)
