@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"strconv"
 
 	"go-booking/internal/models"
 
@@ -25,7 +24,9 @@ type ListRoomFilter struct {
 	Price       int      `json:"price"`
 	Capacity    int      `json:"capacity"`
 	Quantity    int      `json:"quantity"`
-	Available   string   `json:"available"`
+	ExcludeIDs  []string `json:"exclude_ids"`
+	Take        int64    `json:"take"`
+	Skip        int64    `json:"skip"`
 }
 
 func NewRoomStorage(db *pgxpool.Pool) RoomStorage {
@@ -166,12 +167,14 @@ func buildSearchRoomFilter(qb sq.SelectBuilder, filter ListRoomFilter) (sq.Selec
 	if filter.Quantity > 0 {
 		qb = qb.Where(sq.Eq{"r.quantity": filter.Quantity})
 	}
-	if filter.Available != "" {
-		available, err := strconv.ParseBool(filter.Available)
-		if err != nil {
-			return qb, err
-		}
-		qb = qb.Where(sq.Eq{"r.available": available})
+	if len(filter.ExcludeIDs) > 0 {
+		qb = qb.Where(sq.NotEq{"r.id": filter.ExcludeIDs})
+	}
+	if filter.Take > 0 {
+		qb = qb.Limit(uint64(filter.Take))
+	}
+	if filter.Skip > 0 {
+		qb = qb.Offset(uint64(filter.Skip))
 	}
 
 	return qb, nil

@@ -20,7 +20,6 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 		HotelID:     query.Get("hotel_id"),
 		Name:        query.Get("name"),
 		Description: query.Get("description"),
-		Available:   query.Get("available"),
 	}
 
 	if price := query.Get("price"); price != "" {
@@ -46,6 +45,22 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		filter.Quantity = q
+	}
+	if take := query.Get("take"); take != "" {
+		t, err := strconv.Atoi(take)
+		if err != nil {
+			http.Error(w, "Invalid take value", http.StatusBadRequest)
+			return
+		}
+		filter.Take = int64(t)
+	}
+	if skip := query.Get("skip"); skip != "" {
+		s, err := strconv.Atoi(skip)
+		if err != nil {
+			http.Error(w, "Invalid skip value", http.StatusBadRequest)
+			return
+		}
+		filter.Skip = int64(s)
 	}
 
 	rooms, count, err := h.roomService.List(r.Context(), filter)
