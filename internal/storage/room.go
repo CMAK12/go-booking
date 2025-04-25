@@ -154,6 +154,15 @@ func buildSearchRoomFilter(qb sq.SelectBuilder, filter dto.ListRoomFilter) (sq.S
 	if filter.Quantity > 0 {
 		qb = qb.Where(sq.Eq{"r.quantity": filter.Quantity})
 	}
+	if len(filter.ExcludeIDs) > 0 {
+		qb = qb.Where(sq.NotEq{"r.id": filter.ExcludeIDs})
+	}
+	if filter.Take > 0 {
+		qb = qb.Limit(uint64(filter.Take))
+	}
+	if filter.Skip > 0 {
+		qb = qb.Offset(uint64(filter.Skip))
+	}
 
 	return qb, nil
 }
