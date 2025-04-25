@@ -16,7 +16,7 @@ func NewUserService(userStorage storage.UserStorage) UserService {
 	return &userService{userStorage: userStorage}
 }
 
-func (s *userService) List(ctx context.Context, filter storage.ListUserFilter) ([]models.User, int64, error) {
+func (s *userService) List(ctx context.Context, filter dto.ListUserFilter) ([]models.User, int64, error) {
 	users, count, err := s.userStorage.List(ctx, filter)
 	if err != nil {
 		log.Println("error listing users", err)

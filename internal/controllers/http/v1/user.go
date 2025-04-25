@@ -5,18 +5,20 @@ import (
 	"net/http"
 
 	"go-booking/internal/dto"
-	"go-booking/internal/models"
-	"go-booking/internal/storage"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 )
 
 func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	filter := storage.ListUserFilter{
-		ID:       r.URL.Query().Get("id"),
-		Username: r.URL.Query().Get("username"),
-		Email:    r.URL.Query().Get("email"),
-		Role:     models.UserRole(r.URL.Query().Get("role")),
+	var filter dto.ListUserFilter
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
+		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+		return nil, http.StatusBadRequest, 0, err
 	}
 
 	users, count, err := h.userService.List(r.Context(), filter)

@@ -5,20 +5,20 @@ import (
 	"net/http"
 
 	"go-booking/internal/dto"
-	"go-booking/internal/models"
-	"go-booking/internal/storage"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 )
 
 func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	filter := storage.ListBookingFilter{
-		ID:        r.URL.Query().Get("id"),
-		UserID:    r.URL.Query().Get("user_id"),
-		RoomID:    r.URL.Query().Get("room_id"),
-		StartDate: r.URL.Query().Get("start_date"),
-		EndDate:   r.URL.Query().Get("end_date"),
-		Status:    models.BookingStatus(r.URL.Query().Get("status")),
+	var filter dto.ListBookingFilter
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return nil, http.StatusBadRequest, 0, err
 	}
 
 	bookings, count, err := h.bookingService.List(r.Context(), filter)

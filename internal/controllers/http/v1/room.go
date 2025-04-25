@@ -3,49 +3,23 @@ package v1
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
-	"go-booking/internal/storage"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/gorilla/schema"
 )
 
 func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	query := r.URL.Query()
+	var filter dto.ListRoomFilter
 
-	filter := storage.ListRoomFilter{
-		ID:          query.Get("id"),
-		HotelID:     query.Get("hotel_id"),
-		Name:        query.Get("name"),
-		Description: query.Get("description"),
-		Available:   query.Get("available"),
-	}
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
 
-	if price := query.Get("price"); price != "" {
-		p, err := strconv.Atoi(price)
-		if err != nil {
-			http.Error(w, "Invalid price value", http.StatusBadRequest)
-			return nil, http.StatusBadRequest, 0, err
-		}
-		filter.Price = p
-	}
-	if capacity := query.Get("capacity"); capacity != "" {
-		c, err := strconv.Atoi(capacity)
-		if err != nil {
-			http.Error(w, "Invalid capacity value", http.StatusBadRequest)
-			return nil, http.StatusBadRequest, 0, err
-		}
-		filter.Capacity = c
-	}
-	if quantity := query.Get("quantity"); quantity != "" {
-		q, err := strconv.Atoi(quantity)
-		if err != nil {
-			http.Error(w, "Invalid quantity value", http.StatusBadRequest)
-			return nil, http.StatusBadRequest, 0, err
-		}
-		filter.Quantity = q
+	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
+		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
+		return nil, http.StatusBadRequest, 0, err
 	}
 
 	rooms, count, err := h.roomService.List(r.Context(), filter)

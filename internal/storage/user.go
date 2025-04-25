@@ -4,26 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"go-booking/internal/dto"
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type (
-	userStorage struct {
-		db      *pgxpool.Pool
-		builder sq.StatementBuilderType
-	}
-
-	ListUserFilter struct {
-		ID       string          `json:"id"`
-		IDs      []string        `json:"ids,omitempty"`
-		Username string          `json:"username"`
-		Email    string          `json:"email"`
-		Role     models.UserRole `json:"role"`
-	}
-)
+type userStorage struct {
+	db      *pgxpool.Pool
+	builder sq.StatementBuilderType
+}
 
 func NewUserStorage(db *pgxpool.Pool) UserStorage {
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
@@ -34,7 +25,7 @@ func NewUserStorage(db *pgxpool.Pool) UserStorage {
 	}
 }
 
-func (s *userStorage) List(ctx context.Context, filter ListUserFilter) ([]models.User, int64, error) {
+func (s *userStorage) List(ctx context.Context, filter dto.ListUserFilter) ([]models.User, int64, error) {
 	qb := s.builder.
 		Select(
 			"id", "name", "email", "role", "created_at",
@@ -135,7 +126,7 @@ func (s *userStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchUserQuery(qb sq.SelectBuilder, filter ListUserFilter) sq.SelectBuilder {
+func buildSearchUserQuery(qb sq.SelectBuilder, filter dto.ListUserFilter) sq.SelectBuilder {
 	if len(filter.IDs) > 0 {
 		qb = qb.Where(sq.Eq{"id": filter.IDs})
 	}

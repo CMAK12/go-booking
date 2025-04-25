@@ -30,3 +30,12 @@ type ListBookingResponse struct {
 	EndDate   time.Time        `json:"end_date"`
 	Status    string           `json:"status"`
 }
+
+type ListBookingFilter struct {
+	ID        string               `schema:"id"`
+	RoomID    string               `schema:"room_id"`
+	UserID    string               `schema:"user_id"`
+	StartDate string               `schema:"start_date"`
+	EndDate   string               `schema:"end_date"`
+	Status    models.BookingStatus `schema:"status"`
+}

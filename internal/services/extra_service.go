@@ -18,7 +18,7 @@ func NewExtraServiceService(extraServiceStorage storage.ExtraServiceStorage) Ext
 	}
 }
 
-func (s *extraServiceService) List(ctx context.Context, filter storage.ListExtraServiceFilter) ([]models.ExtraService, int64, error) {
+func (s *extraServiceService) List(ctx context.Context, filter dto.ListExtraServiceFilter) ([]models.ExtraService, int64, error) {
 	extraServices, count, err := s.extraServiceStorage.List(ctx, filter)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to list extra services: %w", err)

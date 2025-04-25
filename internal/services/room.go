@@ -24,8 +24,8 @@ func NewRoomService(
 	}
 }
 
-func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) ([]dto.ListRoomResponse, int64, error) {
-	rooms, rsCount, err := s.roomStorage.List(ctx, filter)
+func (s *roomService) List(ctx context.Context, rsFilter dto.ListRoomFilter) ([]dto.ListRoomResponse, int64, error) {
+	rooms, rsCount, err := s.roomStorage.List(ctx, rsFilter)
 	if err != nil {
 		log.Println("Error listing rooms:", err)
 		return nil, 0, err
@@ -45,7 +45,7 @@ func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) (
 		}
 	}
 
-	extras, _, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomIDs: roomIDs})
+	extras, _, err := s.extraServiceStorage.List(ctx, dto.ListExtraServiceFilter{RoomIDs: roomIDs})
 	if err != nil {
 		log.Println("Error listing extra services:", err)
 		return nil, 0, err

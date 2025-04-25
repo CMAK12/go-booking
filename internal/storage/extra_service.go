@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"go-booking/internal/dto"
 	"go-booking/internal/models"
 
 	sq "github.com/Masterminds/squirrel"
@@ -14,14 +15,6 @@ type extraServiceStorage struct {
 	builder sq.StatementBuilderType
 }
 
-type ListExtraServiceFilter struct {
-	ID      string   `json:"id"`
-	RoomID  string   `json:"room_id"`
-	RoomIDs []string `json:"room_ids"`
-	Name    string   `json:"name"`
-	Price   int      `json:"price"`
-}
-
 func NewExtraServiceStorage(db *pgxpool.Pool) ExtraServiceStorage {
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
@@ -31,7 +24,7 @@ func NewExtraServiceStorage(db *pgxpool.Pool) ExtraServiceStorage {
 	}
 }
 
-func (s *extraServiceStorage) List(ctx context.Context, filter ListExtraServiceFilter) ([]models.ExtraService, int64, error) {
+func (s *extraServiceStorage) List(ctx context.Context, filter dto.ListExtraServiceFilter) ([]models.ExtraService, int64, error) {
 	qb := s.builder.
 		Select(
 			"id", "room_id", "name", "price",
@@ -137,7 +130,7 @@ func (s *extraServiceStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchExtraServiceQuery(qb sq.SelectBuilder, filter ListExtraServiceFilter) sq.SelectBuilder {
+func buildSearchExtraServiceQuery(qb sq.SelectBuilder, filter dto.ListExtraServiceFilter) sq.SelectBuilder {
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"id": filter.ID})
 	}
