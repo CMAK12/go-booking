@@ -8,11 +8,11 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func MustConnectRedis(ctx context.Context, rdConfig config.RedisConfig) *redis.Client {
+func MustConnectRedis(ctx context.Context, redisConfig config.RedisConfig) *redis.Client {
 	client := redis.NewClient(&redis.Options{
-		Addr:     rdConfig.Addr,
-		Password: rdConfig.Password,
-		DB:       rdConfig.DB,
+		Addr:     redisConfig.Addr,
+		Password: redisConfig.Password,
+		DB:       redisConfig.DB,
 	})
 
 	pong, err := client.Ping(ctx).Result()

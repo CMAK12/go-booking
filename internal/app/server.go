@@ -30,7 +30,7 @@ func MustRun() {
 	pgConn, dsn := db.MustConnectPostgres(ctx, cfg.Postgres)
 	migrate(dsn)
 
-	rdb := redis.MustConnectRedis(ctx, cfg.Redis)
+	redisDB := redis.MustConnectRedis(ctx, cfg.Redis)
 
 	_, shutdownCancel := context.WithTimeout(ctx, 10*time.Second)
 	defer shutdownCancel()
@@ -43,7 +43,7 @@ func MustRun() {
 
 	userService := service.NewUserService(userStorage)
 	hotelService := service.NewHotelService(hotelStorage)
-	roomService := service.NewRoomService(roomStorage, extraServiceStorage, rdb)
+	roomService := service.NewRoomService(roomStorage, extraServiceStorage, redisDB)
 	extraServiceService := service.NewExtraServiceService(extraServiceStorage)
 	bookingService := service.NewBookingService(
 		bookingStorage,

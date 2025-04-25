@@ -14,18 +14,18 @@ import (
 type roomService struct {
 	roomStorage         storage.RoomStorage
 	extraServiceStorage storage.ExtraServiceStorage
-	rdb                 *redis.Client
+	redisDB             *redis.Client
 }
 
 func NewRoomService(
 	roomStorage storage.RoomStorage,
 	extraServiceStorage storage.ExtraServiceStorage,
-	rdb *redis.Client,
+	redisDB *redis.Client,
 ) RoomService {
 	return &roomService{
 		roomStorage:         roomStorage,
 		extraServiceStorage: extraServiceStorage,
-		rdb:                 rdb,
+		redisDB:             redisDB,
 	}
 }
 
@@ -72,10 +72,11 @@ func (s *roomService) List(ctx context.Context, filter storage.ListRoomFilter) (
 
 	roomList = append(roomList, rooms...)
 
-	if err = s.incrementRoomPopularityScore(ctx, rooms); err != nil {
-		log.Println("Error incrementing room popularity score:", err)
-		return nil, 0, err
-	}
+	go func(rooms []models.Room) {
+		if err = s.incrementRoomPopularityScore(ctx, rooms); err != nil {
+			log.Println("Error incrementing room popularity score:", err)
+		}
+	}(rooms)
 
 	roomResponses, err := s.buildRoomResponse(ctx, roomList)
 	if err != nil {
@@ -163,7 +164,7 @@ func (s *roomService) buildRoomResponse(ctx context.Context, rooms []models.Room
 
 func (s *roomService) incrementRoomPopularityScore(ctx context.Context, rooms []models.Room) error {
 	for _, room := range rooms {
-		err := s.rdb.ZIncrBy(ctx, keyRoomPopularitySet, 1, room.ID).Err()
+		err := s.redisDB.ZIncrBy(ctx, keyRoomPopularitySet, 1, room.ID).Err()
 		if err != nil {
 			return err
 		}
@@ -173,7 +174,7 @@ func (s *roomService) incrementRoomPopularityScore(ctx context.Context, rooms []
 }
 
 func (s *roomService) getTopPopularRooms(ctx context.Context, start int64, stop int64) ([]string, int64, error) {
-	popularRooms, err := s.rdb.ZRevRange(ctx, keyRoomPopularitySet, start, stop-1).Result()
+	popularRooms, err := s.redisDB.ZRevRange(ctx, keyRoomPopularitySet, start, stop-1).Result()
 	if err != nil {
 		return nil, 0, err
 	}
@@ -184,7 +185,7 @@ func (s *roomService) getTopPopularRooms(ctx context.Context, start int64, stop 
 }
 
 func (s *roomService) removeRoomPopularityScore(ctx context.Context, roomID string) error {
-	err := s.rdb.ZRem(ctx, keyRoomPopularitySet, roomID).Err()
+	err := s.redisDB.ZRem(ctx, keyRoomPopularitySet, roomID).Err()
 	if err != nil {
 		return err
 	}
