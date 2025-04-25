@@ -27,4 +27,7 @@ type ListRoomFilter struct {
 	Price       int      `schema:"price"`
 	Capacity    int      `schema:"capacity"`
 	Quantity    int      `schema:"quantity"`
+	ExcludeIDs  []string `schema:"exclude_ids"`
+	Take        int64    `schema:"take"`
+	Skip        int64    `schema:"skip"`
 }
