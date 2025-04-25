@@ -13,8 +13,9 @@ type ListExtraServiceResponse struct {
 }
 
 type ListExtraServiceFilter struct {
-	ID     string `schema:"id"`
-	RoomID string `schema:"room_id"`
-	Name   string `schema:"name"`
-	Price  int    `schema:"price"`
+	ID      string   `schema:"id"`
+	RoomID  string   `schema:"room_id"`
+	RoomIDs []string `schema:"room_ids"`
+	Name    string   `schema:"name"`
+	Price   int      `schema:"price"`
 }
