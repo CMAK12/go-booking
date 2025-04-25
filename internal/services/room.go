@@ -138,7 +138,7 @@ func (s *roomService) buildRoomResponse(ctx context.Context, rooms []models.Room
 	result := make([]dto.ListRoomResponse, 0, len(rooms))
 
 	for _, room := range rooms {
-		extraServices, _, err := s.extraServiceStorage.List(ctx, storage.ListExtraServiceFilter{RoomID: room.ID})
+		extraServices, _, err := s.extraServiceStorage.List(ctx, dto.ListExtraServiceFilter{RoomID: room.ID})
 		if err != nil {
 			return nil, err
 		}
