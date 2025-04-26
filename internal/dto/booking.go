@@ -32,10 +32,11 @@ type ListBookingResponse struct {
 }
 
 type ListBookingFilter struct {
-	ID        string               `schema:"id"`
-	RoomID    string               `schema:"room_id"`
-	UserID    string               `schema:"user_id"`
-	StartDate string               `schema:"start_date"`
-	EndDate   string               `schema:"end_date"`
-	Status    models.BookingStatus `schema:"status"`
+	ID         string                 `json:"id"`
+	RoomID     string                 `json:"room_id"`
+	UserID     string                 `json:"user_id"`
+	StartDate  time.Time              `json:"start_date"`
+	EndDate    time.Time              `json:"end_date"`
+	LatestDate string                 `json:"-"`
+	Status     []models.BookingStatus `json:"status"`
 }

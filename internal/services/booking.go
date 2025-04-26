@@ -90,7 +90,7 @@ func (s *bookingService) List(ctx context.Context, filter dto.ListBookingFilter)
 		userMap[user.ID] = user
 	}
 
-	rooms, roomsCount, err := s.roomService.List(ctx, storage.ListRoomFilter{IDs: roomIDs})
+	rooms, roomsCount, err := s.roomService.List(ctx, dto.ListRoomFilter{IDs: roomIDs})
 	if err != nil {
 		log.Println("failed to list rooms:", err)
 		return nil, 0, err
