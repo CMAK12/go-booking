@@ -32,7 +32,8 @@ func (s *bookingStorage) List(ctx context.Context, filter dto.ListBookingFilter)
 
 			"COUNT(*) OVER() AS total_count",
 		).
-		From(fmt.Sprintf("%s AS bt", bookingTable))
+		From(fmt.Sprintf("%s AS bt", bookingTable)).
+		OrderBy("bt.start_date ASC")
 
 	qb, err := buildSearchBookingQuery(qb, filter)
 	if err != nil {
@@ -100,7 +101,6 @@ func (s *bookingStorage) Update(ctx context.Context, id string, booking models.B
 		Set("status", booking.Status).
 		Where(sq.Eq{"id": id}).
 		ToSql()
-
 	if err != nil {
 		return models.Booking{}, fmt.Errorf("failed to build query: %w", err)
 	}
@@ -140,16 +140,16 @@ func buildSearchBookingQuery(qb sq.SelectBuilder, filter dto.ListBookingFilter) 
 	if filter.UserID != "" {
 		qb = qb.Where(sq.Eq{"bt.user_id": filter.UserID})
 	}
-	if filter.StartDate != "" && filter.EndDate != "" {
-		if filter.StartDate >= filter.EndDate {
-			return qb, fmt.Errorf("start date is bigger than end date")
-		}
+	if !filter.StartDate.IsZero() && !filter.EndDate.IsZero() {
 		qb = qb.Where(sq.And{
 			sq.Lt{"bt.start_date": filter.EndDate},
 			sq.Gt{"bt.end_date": filter.StartDate},
 		})
 	}
-	if filter.Status != "" {
+	if filter.LatestDate != "" {
+		qb = qb.Where(sq.Gt{"bt.end_date": filter.LatestDate})
+	}
+	if len(filter.Status) > 0 {
 		qb = qb.Where(sq.Eq{"bt.status": filter.Status})
 	}
 

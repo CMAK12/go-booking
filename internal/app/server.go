@@ -48,6 +48,7 @@ func MustRun() {
 	bookingService := service.NewBookingService(
 		bookingStorage,
 		hotelStorage,
+		roomStorage,
 		roomService,
 		userStorage,
 		extraServiceStorage,

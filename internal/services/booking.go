@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math"
+	"sort"
 
+	"go-booking/internal/consts"
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
@@ -15,6 +18,7 @@ import (
 type bookingService struct {
 	bookingStorage      storage.BookingStorage
 	hotelStorage        storage.HotelStorage
+	roomStorage         storage.RoomStorage
 	roomService         RoomService
 	userStorage         storage.UserStorage
 	extraServiceStorage storage.ExtraServiceStorage
@@ -24,6 +28,7 @@ type bookingService struct {
 func NewBookingService(
 	bookingStorage storage.BookingStorage,
 	hotelStorage storage.HotelStorage,
+	roomStorage storage.RoomStorage,
 	roomService RoomService,
 	userStorage storage.UserStorage,
 	extraServiceStorage storage.ExtraServiceStorage,
@@ -32,12 +37,20 @@ func NewBookingService(
 	return &bookingService{
 		bookingStorage:      bookingStorage,
 		hotelStorage:        hotelStorage,
+		roomStorage:         roomStorage,
 		roomService:         roomService,
 		userStorage:         userStorage,
 		extraServiceStorage: extraServiceStorage,
 		mailAuth:            mailAuth,
 	}
 }
+
+const (
+	dateLayout       = "2006-01-02"
+	hoursInDay       = 24
+	errorMsgTemplate = "room %s is already booked for the selected dates. Nearest free dates: %s"
+	storageErrorMsg  = "failed to check booking availability: %w"
+)
 
 func (s *bookingService) List(ctx context.Context, filter dto.ListBookingFilter) ([]dto.ListBookingResponse, int64, error) {
 	bookings, count, err := s.bookingStorage.List(ctx, filter)
@@ -77,14 +90,14 @@ func (s *bookingService) List(ctx context.Context, filter dto.ListBookingFilter)
 		userMap[user.ID] = user
 	}
 
-	rooms, rsCount, err := s.roomService.List(ctx, dto.ListRoomFilter{IDs: roomIDs})
+	rooms, roomsCount, err := s.roomService.List(ctx, storage.ListRoomFilter{IDs: roomIDs})
 	if err != nil {
 		log.Println("failed to list rooms:", err)
 		return nil, 0, err
 	}
 	roomMap := make(map[string]dto.ListRoomResponse)
 
-	hotelIDs := make([]string, 0, rsCount)
+	hotelIDs := make([]string, 0, roomsCount)
 	hotelIDMap := make(map[string]bool)
 	for _, room := range rooms {
 		if !hotelIDMap[room.HotelID] {
@@ -148,63 +161,38 @@ func (s *bookingService) Create(ctx context.Context, bookingDTO dto.CreateBookin
 		bookingDTO.EndDate,
 	)
 	if err != nil {
-		log.Println("failed to create booking:", err)
+		log.Printf("failed to create booking: %v", err)
 		return models.Booking{}, err
 	}
 
-	_, bsCount, err := s.bookingStorage.List(ctx, dto.ListBookingFilter{
-		RoomID:    bookingDTO.RoomID,
-		StartDate: bookingDTO.StartDate,
-		EndDate:   bookingDTO.EndDate,
-	})
-	if err != nil {
-		log.Println("failed to list bookings for room:", err)
+	if err := s.checkRoomAvailability(ctx, booking, bookingDTO); err != nil {
 		return models.Booking{}, err
-	} else if bsCount > 0 {
-		log.Printf("room %s is already booked for the selected dates", booking.RoomID)
-		return models.Booking{}, fmt.Errorf("room %s is already booked for the selected dates", booking.RoomID)
 	}
 
 	newBooking, err := s.bookingStorage.Create(ctx, booking)
 	if err != nil {
-		log.Println("failed to create booking:", err)
+		log.Printf("failed to store booking: %v", err)
 		return models.Booking{}, err
 	}
 
-	// go func() {
-	// 	sender := mailer.NewPlainAuth(&s.mailAuth)
-	// 	message := mailer.NewMessage(
-	// 		consts.BookingVerificationSubject,
-	// 		consts.BookingVerificationBody,
-	// 	)
-	// 	message.SetTo([]string{booking.User.Email})
-
-	// 	if err := sender.SendMail(message); err != nil {
-	// 		log.Printf("failed to send email to %s: %v", booking.User.Email, err)
-	// 		return
-	// 	}
-
-	// 	log.Println("email sent successfully to:", booking.User.Email)
-	// }()
-
-	bookings, _, err := s.List(ctx, dto.ListBookingFilter{ID: booking.ID})
-	if err != nil {
-		log.Println("failed to list bookings after creation:", err)
-		return models.Booking{}, err
+	users, userCount, err := s.userStorage.List(ctx, dto.ListUserFilter{ID: booking.UserID})
+	if err != nil || userCount == 0 {
+		log.Printf("failed to fetch user for booking email: %v", err)
+		return newBooking, nil
 	}
+	user := users[0]
 
-	for _, b := range bookings {
-		if b.ID == booking.ID {
-			bookings[0] = b
-			break
+	go func(userEmail string) {
+		sender := mailer.NewPlainAuth(&s.mailAuth)
+		msg := mailer.NewMessage(consts.BookingVerificationSubject, consts.BookingVerificationBody)
+		msg.SetTo([]string{userEmail})
+
+		if err := sender.SendMail(msg); err != nil {
+			log.Printf("failed to send email to %s: %v", userEmail, err)
+			return
 		}
-	}
-
-	// hotels, err := s.hotelStorage.List(ctx, storage.ListHotelFilter{ID: booking.Room.Hotel.ID})
-	// if err != nil {
-	// 	log.Println("failed to list hotels after booking creation:", err)
-	// 	return models.Booking{}, err
-	// }
+		log.Printf("email sent successfully to: %s", userEmail)
+	}(user.Email)
 
 	return newBooking, nil
 }
@@ -239,4 +227,80 @@ func (s *bookingService) Delete(ctx context.Context, id string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *bookingService) checkRoomAvailability(ctx context.Context, booking models.Booking, bookingDTO dto.CreateBookingRequest) error {
+	overlapBookings, overlapCount, err := s.bookingStorage.List(ctx, dto.ListBookingFilter{
+		RoomID:    booking.RoomID,
+		StartDate: booking.StartDate,
+		EndDate:   booking.EndDate,
+	})
+	if err != nil {
+		log.Printf("failed to check room availability: %v", err)
+		return err
+	}
+
+	rooms, roomsCount, err := s.roomStorage.List(ctx, dto.ListRoomFilter{ID: booking.RoomID})
+	if err != nil || roomsCount == 0 {
+		log.Printf("failed to retrieve room for booking: %v", err)
+		return err
+	}
+	room := rooms[0]
+
+	isAvailable := int64(room.Quantity) <= overlapCount
+	if overlapCount > 0 && isAvailable {
+		return s.findNextAvailableDate(ctx, booking, bookingDTO, overlapBookings[0])
+	}
+
+	return nil
+}
+
+func (s *bookingService) findNextAvailableDate(ctx context.Context, booking models.Booking, bookingDTO dto.CreateBookingRequest, overlapBooking models.Booking) error {
+	filter := dto.ListBookingFilter{
+		RoomID:     booking.RoomID,
+		LatestDate: bookingDTO.EndDate,
+		Status:     []models.BookingStatus{models.BookingStatusPending, models.BookingStatusConfirmed},
+	}
+
+	bookings, count, err := s.bookingStorage.List(ctx, filter)
+	if err != nil {
+		return fmt.Errorf(storageErrorMsg, err)
+	}
+
+	duration := booking.EndDate.Sub(booking.StartDate)
+
+	var nextAvailableDateRange string
+
+	if count > 0 {
+		sort.Slice(bookings, func(i, j int) bool {
+			return bookings[i].StartDate.Before(bookings[j].StartDate)
+		})
+
+		for i := int64(0); i < count-1; i++ {
+			current := bookings[i]
+			next := bookings[i+1]
+
+			if next.StartDate.Sub(current.EndDate) >= duration {
+				nextAvailableDateRange = fmt.Sprintf("%s - %s",
+					current.EndDate.Format(dateLayout),
+					current.EndDate.Add(duration).Format(dateLayout))
+				break
+			}
+		}
+
+		if nextAvailableDateRange == "" {
+			lastBooking := bookings[count-1]
+			nextAvailableDateRange = fmt.Sprintf("%s - %s",
+				lastBooking.EndDate.Format(dateLayout),
+				lastBooking.EndDate.Add(duration).Format(dateLayout))
+		}
+	} else {
+		daysToMove := int(math.Round(overlapBooking.EndDate.Sub(booking.StartDate).Hours() / hoursInDay))
+		nearestStart := booking.StartDate.AddDate(0, 0, daysToMove)
+		nextAvailableDateRange = fmt.Sprintf("%s - %s",
+			nearestStart.Format(dateLayout),
+			nearestStart.Add(duration).Format(dateLayout))
+	}
+
+	return fmt.Errorf(errorMsgTemplate, booking.RoomID, nextAvailableDateRange)
 }
