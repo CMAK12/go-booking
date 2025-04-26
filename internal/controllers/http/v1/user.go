@@ -17,13 +17,11 @@ func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) (any, int, in
 	decoder.IgnoreUnknownKeys(true)
 
 	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	users, count, err := h.userService.List(r.Context(), filter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -34,13 +32,11 @@ func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) (any, int, 
 	var req dto.CreateUserRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	user, err := h.userService.Create(r.Context(), req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -52,13 +48,11 @@ func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) (any, int, 
 
 	var req dto.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	user, err := h.userService.Update(r.Context(), id, req)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -69,7 +63,6 @@ func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) (any, int, 
 	id := chi.URLParam(r, "id")
 
 	if err := h.userService.Delete(r.Context(), id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 

@@ -17,13 +17,11 @@ func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) (any, int,
 	decoder.IgnoreUnknownKeys(true)
 
 	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	bookings, count, err := h.bookingService.List(r.Context(), filter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -33,13 +31,11 @@ func (h *Handler) listBooking(w http.ResponseWriter, r *http.Request) (any, int,
 func (h *Handler) createBooking(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	var dto dto.CreateBookingRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	booking, err := h.bookingService.Create(r.Context(), dto)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -51,13 +47,11 @@ func (h *Handler) updateBooking(w http.ResponseWriter, r *http.Request) (any, in
 
 	var booking dto.UpdateBookingRequest
 	if err := json.NewDecoder(r.Body).Decode(&booking); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	updatedBooking, err := h.bookingService.Update(r.Context(), id, booking)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -68,7 +62,6 @@ func (h *Handler) deleteBooking(w http.ResponseWriter, r *http.Request) (any, in
 	id := chi.URLParam(r, "id")
 
 	if err := h.bookingService.Delete(r.Context(), id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 

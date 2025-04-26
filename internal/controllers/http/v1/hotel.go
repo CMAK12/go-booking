@@ -19,14 +19,12 @@ func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) (any, int, i
 	decoder.IgnoreUnknownKeys(true)
 
 	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	if rating := r.URL.Query().Get("rating"); rating != "" {
 		ratingFloat, err := strconv.ParseFloat(rating, 64)
 		if err != nil {
-			http.Error(w, "invalid rating", http.StatusBadRequest)
 			return nil, http.StatusBadRequest, 0, err
 		}
 		filter.Rating = ratingFloat
@@ -34,7 +32,6 @@ func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) (any, int, i
 
 	hotels, count, err := h.hotelService.List(r.Context(), filter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -44,13 +41,11 @@ func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) (any, int, i
 func (h *Handler) createHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	dto := dto.CreateHotelRequest{}
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	hotel, err := h.hotelService.Create(r.Context(), dto)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -62,13 +57,11 @@ func (h *Handler) updateHotel(w http.ResponseWriter, r *http.Request) (any, int,
 
 	hotel := models.Hotel{}
 	if err := json.NewDecoder(r.Body).Decode(&hotel); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	hotel, err := h.hotelService.Update(r.Context(), id, hotel)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -80,7 +73,6 @@ func (h *Handler) deleteHotel(w http.ResponseWriter, r *http.Request) (any, int,
 
 	err := h.hotelService.Delete(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 

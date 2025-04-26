@@ -18,13 +18,11 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) (any, int, in
 	decoder.IgnoreUnknownKeys(true)
 
 	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
-		http.Error(w, "Invalid query parameters", http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 
 	rooms, count, err := h.roomService.List(r.Context(), filter)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -34,14 +32,12 @@ func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) (any, int, in
 func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
 	var dto dto.CreateRoomRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 	defer r.Body.Close()
 
 	room, err := h.roomService.Create(r.Context(), dto)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -53,14 +49,12 @@ func (h *Handler) updateRoom(w http.ResponseWriter, r *http.Request) (any, int, 
 
 	var room models.Room
 	if err := json.NewDecoder(r.Body).Decode(&room); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return nil, http.StatusBadRequest, 0, err
 	}
 	defer r.Body.Close()
 
 	room, err := h.roomService.Update(r.Context(), id, room)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 
@@ -72,7 +66,6 @@ func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) (any, int, 
 
 	err := h.roomService.Delete(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return nil, http.StatusInternalServerError, 0, err
 	}
 

@@ -25,7 +25,6 @@ func ResponseWrapper(handler func(w http.ResponseWriter, r *http.Request) (any, 
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		writeJSON(w, status, resp, count)
 	}
 }
