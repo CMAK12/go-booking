@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"go-booking/internal/broker"
 	"go-booking/internal/config"
 	v1 "go-booking/internal/controllers/http/v1"
 	service "go-booking/internal/services"
@@ -16,6 +17,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/nats-io/nats.go"
 	"github.com/pressly/goose"
 )
 
@@ -32,6 +34,14 @@ func MustRun() {
 
 	redisDB := redis.MustConnectRedis(ctx, cfg.Redis)
 
+	nc, err := nats.Connect(nats.DefaultURL)
+	if err != nil {
+		log.Fatalf("failed to connect to NATS: %v", err)
+	}
+	defer nc.Close()
+
+	emailBroker := broker.NewEmailBroker(&mailAuth)
+
 	_, shutdownCancel := context.WithTimeout(ctx, 10*time.Second)
 	defer shutdownCancel()
 
@@ -46,13 +56,13 @@ func MustRun() {
 	roomService := service.NewRoomService(roomStorage, extraServiceStorage, redisDB)
 	extraServiceService := service.NewExtraServiceService(extraServiceStorage)
 	bookingService := service.NewBookingService(
+		emailBroker,
 		bookingStorage,
 		hotelStorage,
 		roomStorage,
 		roomService,
 		userStorage,
 		extraServiceStorage,
-		mailAuth,
 	)
 
 	handler := v1.NewHandler(

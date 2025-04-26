@@ -7,41 +7,40 @@ import (
 	"math"
 	"sort"
 
+	"go-booking/internal/broker"
 	"go-booking/internal/consts"
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
-
-	"github.com/veyselaksin/gomailer/pkg/mailer"
 )
 
 type bookingService struct {
+	emailBroker         *broker.EmailBroker
 	bookingStorage      storage.BookingStorage
 	hotelStorage        storage.HotelStorage
 	roomStorage         storage.RoomStorage
 	roomService         RoomService
 	userStorage         storage.UserStorage
 	extraServiceStorage storage.ExtraServiceStorage
-	mailAuth            mailer.Authentication
 }
 
 func NewBookingService(
+	emailBroker *broker.EmailBroker,
 	bookingStorage storage.BookingStorage,
 	hotelStorage storage.HotelStorage,
 	roomStorage storage.RoomStorage,
 	roomService RoomService,
 	userStorage storage.UserStorage,
 	extraServiceStorage storage.ExtraServiceStorage,
-	mailAuth mailer.Authentication,
 ) BookingService {
 	return &bookingService{
+		emailBroker:         emailBroker,
 		bookingStorage:      bookingStorage,
 		hotelStorage:        hotelStorage,
 		roomStorage:         roomStorage,
 		roomService:         roomService,
 		userStorage:         userStorage,
 		extraServiceStorage: extraServiceStorage,
-		mailAuth:            mailAuth,
 	}
 }
 
@@ -182,17 +181,11 @@ func (s *bookingService) Create(ctx context.Context, bookingDTO dto.CreateBookin
 	}
 	user := users[0]
 
-	go func(userEmail string) {
-		sender := mailer.NewPlainAuth(&s.mailAuth)
-		msg := mailer.NewMessage(consts.BookingVerificationSubject, consts.BookingVerificationBody)
-		msg.SetTo([]string{userEmail})
-
-		if err := sender.SendMail(msg); err != nil {
-			log.Printf("failed to send email to %s: %v", userEmail, err)
-			return
-		}
-		log.Printf("email sent successfully to: %s", userEmail)
-	}(user.Email)
+	s.emailBroker.Publish(broker.EmailTask{
+		To:      user.Email,
+		Subject: consts.BookingVerificationSubject,
+		Body:    consts.BookingVerificationBody,
+	})
 
 	return newBooking, nil
 }
