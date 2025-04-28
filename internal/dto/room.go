@@ -20,7 +20,7 @@ type ListRoomResponse struct {
 
 type ListRoomFilter struct {
 	ID          string   `schema:"id"`
-	IDs         []string `schema:"ids,omitempty"`
+	IDs         []string `schema:"-"`
 	HotelID     string   `schema:"hotel_id"`
 	Name        string   `schema:"name"`
 	Description string   `schema:"description"`
@@ -28,6 +28,6 @@ type ListRoomFilter struct {
 	Capacity    int      `schema:"capacity"`
 	Quantity    int      `schema:"quantity"`
 	ExcludeIDs  []string `schema:"exclude_ids"`
-	Take        int64    `schema:"take"`
-	Skip        int64    `schema:"skip"`
+	PageNumber  int64    `schema:"page_number"`
+	PageSize    int64    `schema:"page_size"`
 }

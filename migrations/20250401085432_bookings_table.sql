@@ -11,6 +11,11 @@ CREATE TABLE IF NOT EXISTS bookings (
 -- +goose StatementEnd
 
 -- +goose StatementBegin
+CREATE INDEX IF NOT EXISTS idx_bookings_room_id ON bookings (room_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_user_id ON bookings (user_id);
+-- +goose StatementEnd
+
+-- +goose StatementBegin
 ALTER TABLE bookings
 ADD CONSTRAINT check_dates CHECK (start_date < end_date);
 -- +goose StatementEnd

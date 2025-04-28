@@ -29,16 +29,11 @@ func (s *bookingStorage) List(ctx context.Context, filter dto.ListBookingFilter)
 	qb := s.builder.
 		Select(
 			"bt.id", "bt.user_id", "bt.room_id", "bt.start_date", "bt.end_date", "bt.status",
-
-			"COUNT(*) OVER() AS total_count",
 		).
 		From(fmt.Sprintf("%s AS bt", bookingTable)).
 		OrderBy("bt.start_date ASC")
 
-	qb, err := buildSearchBookingQuery(qb, filter)
-	if err != nil {
-		return nil, 0, fmt.Errorf("failed to build search query: %w", err)
-	}
+	qb = buildSearchBookingQuery(qb, filter)
 
 	query, args, err := qb.ToSql()
 	if err != nil {
@@ -55,14 +50,12 @@ func (s *bookingStorage) List(ctx context.Context, filter dto.ListBookingFilter)
 	var totalCount int64
 	for rows.Next() {
 		var booking models.Booking
-		var count int64
 		if err := rows.Scan(
 			&booking.ID, &booking.UserID, &booking.RoomID, &booking.StartDate, &booking.EndDate, &booking.Status,
-			&count,
 		); err != nil {
 			return nil, 0, fmt.Errorf("failed to scan booking: %w", err)
 		}
-		totalCount = count
+		totalCount++
 		bookings = append(bookings, booking)
 	}
 
@@ -130,7 +123,7 @@ func (s *bookingStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchBookingQuery(qb sq.SelectBuilder, filter dto.ListBookingFilter) (sq.SelectBuilder, error) {
+func buildSearchBookingQuery(qb sq.SelectBuilder, filter dto.ListBookingFilter) sq.SelectBuilder {
 	if filter.ID != "" {
 		qb = qb.Where(sq.Eq{"bt.id": filter.ID})
 	}
@@ -152,6 +145,12 @@ func buildSearchBookingQuery(qb sq.SelectBuilder, filter dto.ListBookingFilter) 
 	if len(filter.Status) > 0 {
 		qb = qb.Where(sq.Eq{"bt.status": filter.Status})
 	}
+	if filter.PageSize > 0 {
+		qb = qb.Limit(uint64(filter.PageSize))
+	}
+	if filter.PageNumber > 0 {
+		qb = qb.Offset(uint64((filter.PageNumber - 1) * filter.PageSize))
+	}
 
-	return qb, nil
+	return qb
 }

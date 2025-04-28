@@ -90,7 +90,11 @@ func (s *bookingService) List(ctx context.Context, filter dto.ListBookingFilter)
 		userMap[user.ID] = user
 	}
 
-	rooms, roomsCount, err := s.roomService.List(ctx, dto.ListRoomFilter{IDs: roomIDs})
+	rooms, roomsCount, err := s.roomService.List(ctx, dto.ListRoomFilter{
+		IDs:        roomIDs,
+		PageSize:   filter.PageSize,
+		PageNumber: filter.PageNumber,
+	})
 	if err != nil {
 		log.Println("failed to list rooms:", err)
 		return nil, 0, err
@@ -121,19 +125,19 @@ func (s *bookingService) List(ctx context.Context, filter dto.ListBookingFilter)
 	for _, booking := range bookings {
 		user, userExists := userMap[booking.UserID]
 		if !userExists {
-			log.Println("user not found for booking:", booking.ID)
+			log.Printf("user %s not found for booking %s:", booking.UserID, booking.ID)
 			continue
 		}
 
 		room, roomExists := roomMap[booking.RoomID]
 		if !roomExists {
-			log.Println("room not found for booking:", booking.ID)
+			log.Printf("room %s not found for booking: %s", booking.RoomID, booking.ID)
 			continue
 		}
 
 		hotel, hotelExists := hotelMap[room.HotelID]
 		if !hotelExists {
-			log.Println("hotel not found for booking:", booking.ID)
+			log.Printf("hotel %s not found for booking %s:", booking.HotelID, booking.ID)
 			continue
 		}
 

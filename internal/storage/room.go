@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"go-booking/internal/consts"
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 
@@ -29,15 +30,10 @@ func (s *roomStorage) List(ctx context.Context, filter dto.ListRoomFilter) ([]mo
 	qb := s.builder.
 		Select(
 			"r.id", "r.hotel_id", "r.type", "r.capacity", "r.price", "r.quantity",
-
-			"COUNT(*) OVER() AS total_count",
 		).
 		From(fmt.Sprintf("%s AS r", roomTable))
 
-	qb, err := buildSearchRoomFilter(qb, filter)
-	if err != nil {
-		return nil, 0, fmt.Errorf("invalid available value: %w", err)
-	}
+	qb = buildSearchRoomFilter(qb, filter)
 
 	query, args, err := qb.ToSql()
 	if err != nil {
@@ -54,14 +50,12 @@ func (s *roomStorage) List(ctx context.Context, filter dto.ListRoomFilter) ([]mo
 	var totalCount int64
 	for rows.Next() {
 		var room models.Room
-		var count int64
 		if err := rows.Scan(
 			&room.ID, &room.HotelID, &room.Type, &room.Capacity, &room.Price, &room.Quantity,
-			&count,
 		); err != nil {
 			return nil, 0, fmt.Errorf("failed to scan row: %w", err)
 		}
-		totalCount = count
+		totalCount++
 		rooms = append(rooms, room)
 	}
 
@@ -129,7 +123,14 @@ func (s *roomStorage) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func buildSearchRoomFilter(qb sq.SelectBuilder, filter dto.ListRoomFilter) (sq.SelectBuilder, error) {
+func buildSearchRoomFilter(qb sq.SelectBuilder, filter dto.ListRoomFilter) sq.SelectBuilder {
+	if filter.PageSize <= 0 {
+		filter.PageSize = consts.DefaultPageSize
+	}
+	if filter.PageNumber <= 0 {
+		filter.PageNumber = consts.DefaultPageNumber
+	}
+
 	if len(filter.IDs) > 0 {
 		qb = qb.Where(sq.Eq{"r.id": filter.IDs})
 	}
@@ -157,12 +158,12 @@ func buildSearchRoomFilter(qb sq.SelectBuilder, filter dto.ListRoomFilter) (sq.S
 	if len(filter.ExcludeIDs) > 0 {
 		qb = qb.Where(sq.NotEq{"r.id": filter.ExcludeIDs})
 	}
-	if filter.Take > 0 {
-		qb = qb.Limit(uint64(filter.Take))
+	if filter.PageSize > 0 {
+		qb = qb.Limit(uint64(filter.PageSize))
 	}
-	if filter.Skip > 0 {
-		qb = qb.Offset(uint64(filter.Skip))
+	if filter.PageNumber > 0 {
+		qb = qb.Offset(uint64((filter.PageNumber - 1) * filter.PageSize))
 	}
 
-	return qb, nil
+	return qb
 }

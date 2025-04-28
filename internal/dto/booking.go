@@ -32,11 +32,13 @@ type ListBookingResponse struct {
 }
 
 type ListBookingFilter struct {
-	ID         string                 `json:"id"`
-	RoomID     string                 `json:"room_id"`
-	UserID     string                 `json:"user_id"`
-	StartDate  time.Time              `json:"start_date"`
-	EndDate    time.Time              `json:"end_date"`
-	LatestDate string                 `json:"-"`
-	Status     []models.BookingStatus `json:"status"`
+	ID         string                 `schema:"id"`
+	RoomID     string                 `schema:"room_id"`
+	UserID     string                 `schema:"user_id"`
+	StartDate  time.Time              `schema:"start_date"`
+	EndDate    time.Time              `schema:"end_date"`
+	LatestDate string                 `schema:"-"`
+	Status     []models.BookingStatus `schema:"status"`
+	PageNumber int64                  `schema:"page_number"`
+	PageSize   int64                  `schema:"page_size"`
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 
+	"go-booking/internal/consts"
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 	"go-booking/internal/storage"
@@ -34,35 +35,20 @@ const (
 )
 
 func (s *roomService) List(ctx context.Context, filter dto.ListRoomFilter) ([]dto.ListRoomResponse, int64, error) {
-	popularRoomIDs, popularRoomIDsCount, err := s.getTopPopularRooms(ctx, filter.Skip, filter.Take)
-	if err != nil {
-		log.Println("Error getting top popular rooms:", err)
-	}
+	roomList := make([]models.Room, 0, filter.PageSize)
+	var popularRoomIDsCount int64
 
-	roomList := make([]models.Room, 0, filter.Take)
-
-	if popularRoomIDsCount <= filter.Take {
-		popularRooms, roomsCount, err := s.roomStorage.List(ctx, dto.ListRoomFilter{IDs: popularRoomIDs})
+	if s.hasFilters(filter) {
+		var err error
+		var roomResponses []dto.ListRoomResponse
+		roomList, roomResponses, popularRoomIDsCount, filter, err = s.handlePopularRooms(ctx, filter)
 		if err != nil {
-			log.Println("Error listing rooms by IDs:", err)
 			return nil, 0, err
 		}
-
-		roomList = append(roomList, popularRooms...)
-
-		if popularRoomIDsCount == filter.Take {
-			roomResponses, err := s.buildRoomResponse(ctx, roomList)
-			if err != nil {
-				log.Println("Error building room response:", err)
-				return nil, 0, err
-			}
-
-			return roomResponses, roomsCount, nil
+		if roomResponses != nil {
+			return roomResponses, popularRoomIDsCount, nil
 		}
 	}
-
-	filter.Take = filter.Take - popularRoomIDsCount
-	filter.ExcludeIDs = popularRoomIDs
 
 	rooms, roomsCount, err := s.roomStorage.List(ctx, filter)
 	if err != nil {
@@ -73,7 +59,7 @@ func (s *roomService) List(ctx context.Context, filter dto.ListRoomFilter) ([]dt
 	roomList = append(roomList, rooms...)
 
 	go func(rooms []models.Room) {
-		if err = s.incrementRoomPopularityScore(ctx, rooms); err != nil {
+		if err := s.incrementRoomPopularityScore(ctx, rooms); err != nil {
 			log.Println("Error incrementing room popularity score:", err)
 		}
 	}(rooms)
@@ -162,6 +148,60 @@ func (s *roomService) buildRoomResponse(ctx context.Context, rooms []models.Room
 	return result, nil
 }
 
+func (s *roomService) initializePagination(filter *dto.ListRoomFilter) {
+	if filter.PageSize <= 0 {
+		filter.PageSize = consts.DefaultPageSize
+	}
+	if filter.PageNumber <= 0 {
+		filter.PageNumber = consts.DefaultPageNumber
+	}
+}
+
+func (s *roomService) hasFilters(filter dto.ListRoomFilter) bool {
+	return filter.ID != "" || len(filter.IDs) <= 0 || filter.HotelID != "" ||
+		filter.Name != "" || filter.Description != "" || filter.Price > 0 ||
+		filter.Capacity > 0 || filter.Quantity > 0
+}
+
+func (s *roomService) handlePopularRooms(
+	ctx context.Context,
+	filter dto.ListRoomFilter,
+) ([]models.Room, []dto.ListRoomResponse, int64, dto.ListRoomFilter, error) {
+	s.initializePagination(&filter)
+
+	popularRoomIDs, popularRoomIDsCount, err := s.getTopPopularRooms(ctx, filter.PageSize, filter.PageNumber)
+	if err != nil {
+		log.Println("Error getting top popular rooms:", err)
+	}
+
+	roomList := make([]models.Room, 0, filter.PageSize)
+
+	if popularRoomIDsCount <= filter.PageSize {
+		popularRooms, roomsCount, err := s.roomStorage.List(ctx, dto.ListRoomFilter{IDs: popularRoomIDs})
+		if err != nil {
+			log.Println("Error listing rooms by IDs:", err)
+			return nil, nil, 0, filter, err
+		}
+
+		roomList = append(roomList, popularRooms...)
+
+		if popularRoomIDsCount == filter.PageSize {
+			roomResponses, err := s.buildRoomResponse(ctx, roomList)
+			if err != nil {
+				log.Println("Error building room response:", err)
+				return nil, nil, 0, filter, err
+			}
+
+			return nil, roomResponses, roomsCount, filter, err
+		}
+	}
+
+	filter.PageSize -= popularRoomIDsCount
+	filter.ExcludeIDs = popularRoomIDs
+
+	return roomList, nil, popularRoomIDsCount, filter, nil
+}
+
 func (s *roomService) incrementRoomPopularityScore(ctx context.Context, rooms []models.Room) error {
 	for _, room := range rooms {
 		err := s.redisDB.ZIncrBy(ctx, keyRoomPopularitySet, 1, room.ID).Err()
@@ -173,8 +213,10 @@ func (s *roomService) incrementRoomPopularityScore(ctx context.Context, rooms []
 	return nil
 }
 
-func (s *roomService) getTopPopularRooms(ctx context.Context, start int64, stop int64) ([]string, int64, error) {
-	popularRooms, err := s.redisDB.ZRevRange(ctx, keyRoomPopularitySet, start, stop-1).Result()
+func (s *roomService) getTopPopularRooms(ctx context.Context, pageSize, pageNumber int64) ([]string, int64, error) {
+	startFrom := (pageNumber - 1) * pageSize
+
+	popularRooms, err := s.redisDB.ZRevRange(ctx, keyRoomPopularitySet, startFrom, pageSize-1).Result()
 	if err != nil {
 		return nil, 0, err
 	}
