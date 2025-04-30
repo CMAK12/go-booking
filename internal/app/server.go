@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"log"
-	"net/http"
 	"time"
 
 	"go-booking/internal/config"
@@ -14,7 +13,7 @@ import (
 	redis "go-booking/pkg/caching"
 	"go-booking/pkg/db"
 
-	"github.com/go-chi/chi/v5"
+	"github.com/gofiber/fiber/v2"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose"
 )
@@ -63,10 +62,10 @@ func MustRun() {
 		extraServiceService,
 	)
 
-	router := chi.NewRouter()
-	handler.SetupRoutes(router)
+	app := fiber.New()
+	handler.SetupRoutes(app)
 
-	if err := http.ListenAndServe(cfg.HTTP.Port, router); err != nil {
+	if err := app.Listen(cfg.HTTP.Port); err != nil {
 		log.Fatalf("failed to start server: %v", err)
 	}
 }
