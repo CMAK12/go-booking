@@ -131,6 +131,9 @@ func buildSearchRoomFilter(qb sq.SelectBuilder, filter dto.ListRoomFilter) sq.Se
 		filter.PageNumber = consts.DefaultPageNumber
 	}
 
+	if len(filter.IDs) > 0 && filter.PageSize > 0 && filter.PageNumber > 1 {
+		return qb
+	}
 	if len(filter.IDs) > 0 {
 		qb = qb.Where(sq.Eq{"r.id": filter.IDs})
 	}
@@ -158,11 +161,13 @@ func buildSearchRoomFilter(qb sq.SelectBuilder, filter dto.ListRoomFilter) sq.Se
 	if len(filter.ExcludeIDs) > 0 {
 		qb = qb.Where(sq.NotEq{"r.id": filter.ExcludeIDs})
 	}
-	if filter.PageSize > 0 {
-		qb = qb.Limit(uint64(filter.PageSize))
-	}
-	if filter.PageNumber > 0 {
-		qb = qb.Offset(uint64((filter.PageNumber - 1) * filter.PageSize))
+	if filter.IDs == nil {
+		if filter.PageSize > 0 {
+			qb = qb.Limit(uint64(filter.PageSize))
+		}
+		if filter.PageNumber > 0 {
+			qb = qb.Offset(uint64((filter.PageNumber - 1) * filter.PageSize))
+		}
 	}
 
 	return qb

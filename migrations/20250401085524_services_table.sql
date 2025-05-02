@@ -9,6 +9,10 @@ CREATE TABLE IF NOT EXISTS services (
 -- +goose StatementEnd
 
 -- +goose StatementBegin
+CREATE INDEX IF NOT EXISTS idx_services_room_id ON services (room_id);
+-- +goose StatementEnd
+
+-- +goose StatementBegin
 INSERT INTO services (id, room_id, name, price) VALUES
   (gen_random_uuid(), '81b08cce-4ddf-45d7-a21c-2710653600b8', 'Room Service', 20.00),
   (gen_random_uuid(), '81b08cce-4ddf-45d7-a21c-2710653600b8', 'Laundry Service', 15.00),

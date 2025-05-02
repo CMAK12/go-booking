@@ -59,7 +59,8 @@ func (s *roomService) List(ctx context.Context, filter dto.ListRoomFilter) ([]dt
 	roomList = append(roomList, rooms...)
 
 	go func(rooms []models.Room) {
-		if err := s.incrementRoomPopularityScore(ctx, rooms); err != nil {
+		backgroundCtx := context.Background()
+		if err := s.incrementRoomPopularityScore(backgroundCtx, rooms); err != nil {
 			log.Println("Error incrementing room popularity score:", err)
 		}
 	}(rooms)
