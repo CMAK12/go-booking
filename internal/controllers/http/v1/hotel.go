@@ -3,7 +3,6 @@ package v1
 import (
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
-	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,14 +12,6 @@ func (h *Handler) listHotel(c *fiber.Ctx) (any, int, int64, error) {
 
 	if err := c.QueryParser(&filter); err != nil {
 		return nil, fiber.StatusBadRequest, 0, err
-	}
-
-	if rating := c.Query("rating"); rating != "" {
-		ratingFloat, err := strconv.ParseFloat(rating, 64)
-		if err != nil {
-			return nil, fiber.StatusBadRequest, 0, err
-		}
-		filter.Rating = ratingFloat
 	}
 
 	hotels, count, err := h.hotelService.List(c.Context(), filter)
