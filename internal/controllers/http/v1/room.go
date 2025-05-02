@@ -1,73 +1,63 @@
 package v1
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/schema"
+	"github.com/gofiber/fiber/v2"
 )
 
-func (h *Handler) listRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
+func (h *Handler) listRoom(c *fiber.Ctx) (any, int, int64, error) {
 	var filter dto.ListRoomFilter
 
-	decoder := schema.NewDecoder()
-	decoder.IgnoreUnknownKeys(true)
-
-	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+	if err := c.QueryParser(&filter); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
 
-	rooms, count, err := h.roomService.List(r.Context(), filter)
+	rooms, count, err := h.roomService.List(c.Context(), filter)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return rooms, http.StatusOK, count, nil
+	return rooms, fiber.StatusOK, count, nil
 }
 
-func (h *Handler) createRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
+func (h *Handler) createRoom(c *fiber.Ctx) (any, int, int64, error) {
 	var dto dto.CreateRoomRequest
-	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+	if err := c.BodyParser(&dto); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
-	defer r.Body.Close()
 
-	room, err := h.roomService.Create(r.Context(), dto)
+	room, err := h.roomService.Create(c.Context(), dto)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return room, http.StatusCreated, 1, nil
+	return room, fiber.StatusCreated, 1, nil
 }
 
-func (h *Handler) updateRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	id := chi.URLParam(r, "id")
+func (h *Handler) updateRoom(c *fiber.Ctx) (any, int, int64, error) {
+	id := c.Params("id")
 
 	var room models.Room
-	if err := json.NewDecoder(r.Body).Decode(&room); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+	if err := c.BodyParser(&room); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
-	defer r.Body.Close()
 
-	room, err := h.roomService.Update(r.Context(), id, room)
+	updatedRoom, err := h.roomService.Update(c.Context(), id, room)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return room, http.StatusOK, 1, nil
+	return updatedRoom, fiber.StatusOK, 1, nil
 }
 
-func (h *Handler) deleteRoom(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	id := chi.URLParam(r, "id")
+func (h *Handler) deleteRoom(c *fiber.Ctx) (any, int, int64, error) {
+	id := c.Params("id")
 
-	err := h.roomService.Delete(r.Context(), id)
-	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+	if err := h.roomService.Delete(c.Context(), id); err != nil {
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return nil, http.StatusNoContent, 0, nil
+	return nil, fiber.StatusNoContent, 0, nil
 }

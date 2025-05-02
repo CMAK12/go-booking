@@ -1,80 +1,72 @@
 package v1
 
 import (
-	"encoding/json"
-	"net/http"
-	"strconv"
-
 	"go-booking/internal/dto"
 	"go-booking/internal/models"
+	"strconv"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/schema"
+	"github.com/gofiber/fiber/v2"
 )
 
-func (h *Handler) listHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
+func (h *Handler) listHotel(c *fiber.Ctx) (any, int, int64, error) {
 	var filter dto.ListHotelFilter
 
-	decoder := schema.NewDecoder()
-	decoder.IgnoreUnknownKeys(true)
-
-	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+	if err := c.QueryParser(&filter); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
 
-	if rating := r.URL.Query().Get("rating"); rating != "" {
+	if rating := c.Query("rating"); rating != "" {
 		ratingFloat, err := strconv.ParseFloat(rating, 64)
 		if err != nil {
-			return nil, http.StatusBadRequest, 0, err
+			return nil, fiber.StatusBadRequest, 0, err
 		}
 		filter.Rating = ratingFloat
 	}
 
-	hotels, count, err := h.hotelService.List(r.Context(), filter)
+	hotels, count, err := h.hotelService.List(c.Context(), filter)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return hotels, http.StatusOK, count, nil
+	return hotels, fiber.StatusOK, count, nil
 }
 
-func (h *Handler) createHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	dto := dto.CreateHotelRequest{}
-	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+func (h *Handler) createHotel(c *fiber.Ctx) (any, int, int64, error) {
+	var dto dto.CreateHotelRequest
+	if err := c.BodyParser(&dto); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
 
-	hotel, err := h.hotelService.Create(r.Context(), dto)
+	hotel, err := h.hotelService.Create(c.Context(), dto)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return hotel, http.StatusCreated, 1, nil
+	return hotel, fiber.StatusCreated, 1, nil
 }
 
-func (h *Handler) updateHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	id := chi.URLParam(r, "id")
+func (h *Handler) updateHotel(c *fiber.Ctx) (any, int, int64, error) {
+	id := c.Params("id")
 
-	hotel := models.Hotel{}
-	if err := json.NewDecoder(r.Body).Decode(&hotel); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+	var hotel models.Hotel
+	if err := c.BodyParser(&hotel); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
 
-	hotel, err := h.hotelService.Update(r.Context(), id, hotel)
+	updatedHotel, err := h.hotelService.Update(c.Context(), id, hotel)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return hotel, http.StatusOK, 1, nil
+	return updatedHotel, fiber.StatusOK, 1, nil
 }
 
-func (h *Handler) deleteHotel(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	id := chi.URLParam(r, "id")
+func (h *Handler) deleteHotel(c *fiber.Ctx) (any, int, int64, error) {
+	id := c.Params("id")
 
-	err := h.hotelService.Delete(r.Context(), id)
-	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+	if err := h.hotelService.Delete(c.Context(), id); err != nil {
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return nil, http.StatusNoContent, 0, nil
+	return nil, fiber.StatusNoContent, 0, nil
 }

@@ -1,70 +1,62 @@
 package v1
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"go-booking/internal/dto"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/gorilla/schema"
+	"github.com/gofiber/fiber/v2"
 )
 
-func (h *Handler) listUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
+func (h *Handler) listUser(c *fiber.Ctx) (any, int, int64, error) {
 	var filter dto.ListUserFilter
 
-	decoder := schema.NewDecoder()
-	decoder.IgnoreUnknownKeys(true)
-
-	if err := decoder.Decode(&filter, r.URL.Query()); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+	if err := c.QueryParser(&filter); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
 
-	users, count, err := h.userService.List(r.Context(), filter)
+	users, count, err := h.userService.List(c.Context(), filter)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return users, http.StatusOK, count, nil
+	return users, fiber.StatusOK, count, nil
 }
 
-func (h *Handler) createUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
+func (h *Handler) createUser(c *fiber.Ctx) (any, int, int64, error) {
 	var req dto.CreateUserRequest
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+	if err := c.BodyParser(&req); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
 
-	user, err := h.userService.Create(r.Context(), req)
+	user, err := h.userService.Create(c.Context(), req)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return user, http.StatusCreated, 1, nil
+	return user, fiber.StatusCreated, 1, nil
 }
 
-func (h *Handler) updateUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	id := chi.URLParam(r, "id")
+func (h *Handler) updateUser(c *fiber.Ctx) (any, int, int64, error) {
+	id := c.Params("id")
 
 	var req dto.UpdateUserRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return nil, http.StatusBadRequest, 0, err
+	if err := c.BodyParser(&req); err != nil {
+		return nil, fiber.StatusBadRequest, 0, err
 	}
 
-	user, err := h.userService.Update(r.Context(), id, req)
+	user, err := h.userService.Update(c.Context(), id, req)
 	if err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return user, http.StatusOK, 1, nil
+	return user, fiber.StatusOK, 1, nil
 }
 
-func (h *Handler) deleteUser(w http.ResponseWriter, r *http.Request) (any, int, int64, error) {
-	id := chi.URLParam(r, "id")
+func (h *Handler) deleteUser(c *fiber.Ctx) (any, int, int64, error) {
+	id := c.Params("id")
 
-	if err := h.userService.Delete(r.Context(), id); err != nil {
-		return nil, http.StatusInternalServerError, 0, err
+	if err := h.userService.Delete(c.Context(), id); err != nil {
+		return nil, fiber.StatusInternalServerError, 0, err
 	}
 
-	return nil, http.StatusNoContent, 0, nil
+	return nil, fiber.StatusNoContent, 0, nil
 }

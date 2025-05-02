@@ -3,8 +3,7 @@ package v1
 import (
 	service "go-booking/internal/services"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/gofiber/fiber/v2"
 )
 
 type Handler struct {
@@ -31,40 +30,36 @@ func NewHandler(
 	}
 }
 
-func (h *Handler) SetupRoutes(r *chi.Mux) {
-	r.Use(Logger)
-	r.Use(middleware.Recoverer)
+func (h *Handler) SetupRoutes(app *fiber.App) {
+	api := app.Group("/api/v1", Logger())
 
-	r.Route("/api/v1", func(r chi.Router) {
-		r.Route("/users", func(r chi.Router) {
-			r.Get("/", ResponseWrapper(h.listUser))
-			r.Post("/", ResponseWrapper(h.createUser))
-			r.Put("/{id}", ResponseWrapper(h.updateUser))
-			r.Delete("/{id}", ResponseWrapper(h.deleteUser))
-		})
-		r.Route("/bookings", func(r chi.Router) {
-			r.Get("/", ResponseWrapper(h.listBooking))
-			r.Post("/", ResponseWrapper(h.createBooking))
-			r.Put("/{id}", ResponseWrapper(h.updateBooking))
-			r.Delete("/{id}", ResponseWrapper(h.deleteBooking))
-		})
-		r.Route("/hotels", func(r chi.Router) {
-			r.Get("/", ResponseWrapper(h.listHotel))
-			r.Post("/", ResponseWrapper(h.createHotel))
-			r.Put("/{id}", ResponseWrapper(h.updateHotel))
-			r.Delete("/{id}", ResponseWrapper(h.deleteHotel))
-		})
-		r.Route("/rooms", func(r chi.Router) {
-			r.Get("/", ResponseWrapper(h.listRoom))
-			r.Post("/", ResponseWrapper(h.createRoom))
-			r.Put("/{id}", ResponseWrapper(h.updateRoom))
-			r.Delete("/{id}", ResponseWrapper(h.deleteRoom))
-		})
-		r.Route("/services", func(r chi.Router) {
-			r.Get("/", ResponseWrapper(h.listExtraService))
-			r.Post("/", ResponseWrapper(h.createExtraService))
-			r.Put("/{id}", ResponseWrapper(h.updateExtraService))
-			r.Delete("/{id}", ResponseWrapper(h.deleteExtraService))
-		})
-	})
+	users := api.Group("/users")
+	users.Get("/", ResponseWrapper(h.listUser))
+	users.Post("/", ResponseWrapper(h.createUser))
+	users.Put("/:id", ResponseWrapper(h.updateUser))
+	users.Delete("/:id", ResponseWrapper(h.deleteUser))
+
+	bookings := api.Group("/bookings")
+	bookings.Get("/", ResponseWrapper(h.listBooking))
+	bookings.Post("/", ResponseWrapper(h.createBooking))
+	bookings.Put("/:id", ResponseWrapper(h.updateBooking))
+	bookings.Delete("/:id", ResponseWrapper(h.deleteBooking))
+
+	hotels := api.Group("/hotels")
+	hotels.Get("/", ResponseWrapper(h.listHotel))
+	hotels.Post("/", ResponseWrapper(h.createHotel))
+	hotels.Put("/:id", ResponseWrapper(h.updateHotel))
+	hotels.Delete("/:id", ResponseWrapper(h.deleteHotel))
+
+	rooms := api.Group("/rooms")
+	rooms.Get("/", ResponseWrapper(h.listRoom))
+	rooms.Post("/", ResponseWrapper(h.createRoom))
+	rooms.Put("/:id", ResponseWrapper(h.updateRoom))
+	rooms.Delete("/:id", ResponseWrapper(h.deleteRoom))
+
+	services := api.Group("/services")
+	services.Get("/", ResponseWrapper(h.listExtraService))
+	services.Post("/", ResponseWrapper(h.createExtraService))
+	services.Put("/:id", ResponseWrapper(h.updateExtraService))
+	services.Delete("/:id", ResponseWrapper(h.deleteExtraService))
 }
